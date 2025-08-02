@@ -32,6 +32,7 @@
             --accent-success: #10b981;
             --accent-warning: #f59e0b;
             --accent-danger: #ef4444;
+            --accent-info: #06b6d4;
             --border-color: #e2e8f0;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
@@ -59,6 +60,7 @@
             --accent-success: #34d399;
             --accent-warning: #fbbf24;
             --accent-danger: #f87171;
+            --accent-info: #22d3ee;
             --border-color: #334155;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
@@ -305,6 +307,69 @@
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
+        }
+
+        /* Info Banner */
+        .info-banner {
+            padding: 1.5rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .info-banner-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--accent-info);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .info-banner-icon {
+            flex-shrink: 0;
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--accent-info);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .info-banner-text {
+            flex: 1;
+        }
+
+        .info-banner-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .info-banner-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .info-banner-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            transition: all var(--transition-fast);
+        }
+
+        .info-banner-close:hover {
+            color: var(--text-primary);
+            background: var(--bg-secondary);
         }
 
         /* Code Blocks */
@@ -631,6 +696,16 @@
                 padding: 3rem 1rem;
             }
 
+            .info-banner {
+                padding: 1rem;
+            }
+
+            .info-banner-content {
+                flex-direction: column;
+                text-align: center;
+                padding: 1.5rem;
+            }
+
             .architecture-grid,
             .features-grid {
                 grid-template-columns: 1fr;
@@ -682,6 +757,7 @@
         .mb-2 { margin-bottom: 0.5rem; }
         .mb-4 { margin-bottom: 1rem; }
         .mt-4 { margin-top: 1rem; }
+        .hidden { display: none; }
     </style>
 </head>
 <body data-theme="light">
@@ -764,6 +840,24 @@
                         Installation
                     </a>
                 </div>
+            </div>
+        </section>
+
+        <!-- Info Banner -->
+        <section class="info-banner" id="info-banner">
+            <div class="info-banner-content">
+                <div class="info-banner-icon">
+                    <i class="fas fa-info"></i>
+                </div>
+                <div class="info-banner-text">
+                    <div class="info-banner-title">Code en Développement</div>
+                    <div class="info-banner-description">
+                        Les exemples de code présentés sont des maquettes. Le développement du bot est en cours et certaines fonctionnalités peuvent différer de l'implémentation finale.
+                    </div>
+                </div>
+                <button class="info-banner-close" onclick="closeInfoBanner()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </section>
 
@@ -1374,6 +1468,21 @@ async drawGlowingAvatar(ctx, user, x, y, radius, glowColor) {
             themeIcon.className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
+        // Close Info Banner
+        function closeInfoBanner() {
+            const banner = document.getElementById('info-banner');
+            banner.classList.add('hidden');
+            localStorage.setItem('codeBannerClosed', 'true');
+        }
+
+        // Check if info banner was previously closed
+        function checkInfoBanner() {
+            const bannerClosed = localStorage.getItem('codeBannerClosed');
+            if (bannerClosed === 'true') {
+                document.getElementById('info-banner').classList.add('hidden');
+            }
+        }
+
         // Sidebar Toggle
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -1463,6 +1572,7 @@ async drawGlowingAvatar(ctx, user, x, y, radius, glowColor) {
         // Initialize everything
         document.addEventListener('DOMContentLoaded', () => {
             loadTheme();
+            checkInfoBanner();
             initSmoothScrolling();
             updateActiveNavigation();
             initClickOutside();
