@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Source - QuestBot Advanced</title>
+    <meta name="description" content="Explorez le code source de QuestBot Advanced - Architecture moderne, exemples de code et documentation technique">
+    <meta name="keywords" content="discord bot, code source, nodejs, canvas, javascript, open source">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💻</text></svg>">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Thème Clair */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --bg-code: #1e1e1e;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --text-code: #e4e4e7;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #8b5cf6;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            
+            /* Transitions */
+            --transition-fast: 0.15s ease-in-out;
+            --transition-normal: 0.3s ease-in-out;
+            --transition-slow: 0.5s ease-in-out;
+        }
+
+        [data-theme="dark"] {
+            /* Thème Sombre */
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --bg-code: #0d1117;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --text-code: #e6edf3;
+            --accent-primary: #60a5fa;
+            --accent-secondary: #a78bfa;
+            --accent-success: #34d399;
+            --accent-warning: #fbbf24;
+            --accent-danger: #f87171;
+            --border-color: #334155;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: all var(--transition-normal);
+        }
+
+        /* Navbar (copié de index.html) */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            transition: all var(--transition-normal);
+        }
+
+        [data-theme="dark"] .navbar {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .navbar-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .navbar-brand .icon {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .navbar-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color var(--transition-fast);
+            position: relative;
+        }
+
+        .navbar-nav a:hover,
+        .navbar-nav a.active {
+            color: var(--accent-primary);
+        }
+
+        .navbar-nav a::after {
+            content: '';
+            position: absolute;
+            bottom: -0.5rem;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-primary);
+            transition: width var(--transition-fast);
+        }
+
+        .navbar-nav a:hover::after,
+        .navbar-nav a.active::after {
+            width: 100%;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: all var(--transition-fast);
+        }
+
+        .theme-toggle:hover {
+            color: var(--accent-primary);
+            background: var(--bg-secondary);
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Sidebar (copié de index.html) */
+        .sidebar {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 280px;
+            height: calc(100vh - 80px);
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            overflow-y: auto;
+            z-index: 999;
+            transition: transform var(--transition-normal);
+        }
+
+        .sidebar-content {
+            padding: 0 1.5rem;
+        }
+
+        .sidebar-section {
+            margin-bottom: 2rem;
+        }
+
+        .sidebar-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all var(--transition-fast);
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            color: var(--accent-primary);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .sidebar-nav i {
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            margin-top: 80px;
+            min-height: calc(100vh - 80px);
+            transition: margin-left var(--transition-normal);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: white;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M20 20.5V18H18V20.5L14.5 24L16.5 26L20 22.5L23.5 26L25.5 24L22 20.5Z'/%3E%3C/g%3E%3C/svg%3E") repeat;
+        }
+
+        .hero-content {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            margin-bottom: 2rem;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Code Blocks */
+        .code-section {
+            padding: 4rem 2rem;
+            background: var(--bg-secondary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .code-grid {
+            display: grid;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .code-block {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .code-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .code-language {
+            background: var(--accent-primary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            transition: all var(--transition-fast);
+        }
+
+        .copy-btn:hover {
+            color: var(--accent-primary);
+            background: var(--bg-secondary);
+        }
+
+        .code-content {
+            position: relative;
+        }
+
+        .code-content pre {
+            margin: 0;
+            padding: 1.5rem;
+            background: var(--bg-code) !important;
+            color: var(--text-code);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        .code-content code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Architecture Section */
+        .architecture {
+            padding: 4rem 2rem;
+            background: var(--bg-primary);
+        }
+
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .architecture-card {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-normal);
+        }
+
+        .architecture-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .architecture-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .architecture-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .architecture-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-card {
+            background: var(--bg-primary);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-normal);
+            border: 1px solid var(--border-color);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .feature-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Tech Stack */
+        .tech-stack {
+            padding: 4rem 2rem;
+            background: var(--bg-secondary);
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .tech-item {
+            padding: 2rem;
+            background: var(--bg-primary);
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-normal);
+        }
+
+        .tech-item:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .tech-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--accent-primary);
+        }
+
+        .tech-name {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .tech-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Footer (copié de index.html) */
+        .footer {
+            background: var(--bg-tertiary);
+            padding: 4rem 2rem 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-section h3 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .footer-section a:hover {
+            color: var(--accent-primary);
+        }
+
+        .footer-bottom {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .navbar-nav {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .navbar-content {
+                padding: 1rem;
+            }
+
+            .hero,
+            .code-section,
+            .architecture,
+            .tech-stack {
+                padding: 3rem 1rem;
+            }
+
+            .architecture-grid,
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tech-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+
+        /* Utility Classes */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all var(--transition-fast);
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-tertiary);
+            transform: translateY(-2px);
+        }
+
+        .text-center { text-align: center; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mt-4 { margin-top: 1rem; }
+    </style>
+</head>
+<body data-theme="light">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="index.html" class="navbar-brand">
+                <span class="icon">🎮</span>
+                QuestBot Advanced
+            </a>
+            
+            <ul class="navbar-nav">
+                <li><a href="index.html">Accueil</a></li>
+                <li><a href="index.html#fonctionnalites">Fonctionnalités</a></li>
+                <li><a href="index.html#commandes">Commandes</a></li>
+                <li><a href="index.html#installation">Installation</a></li>
+                <li><a href="code-source.html" class="active">Code Source</a></li>
+            </ul>
+            
+            <div class="navbar-actions">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="menu-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-content">
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Code Source</h3>
+                <ul class="sidebar-nav">
+                    <li><a href="#architecture" class="active"><i class="fas fa-sitemap"></i> Architecture</a></li>
+                    <li><a href="#examples"><i class="fas fa-code"></i> Exemples de Code</a></li>
+                    <li><a href="#tech-stack"><i class="fas fa-layer-group"></i> Technologies</a></li>
+                    <li><a href="#features-code"><i class="fas fa-cogs"></i> Fonctionnalités</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Développement</h3>
+                <ul class="sidebar-nav">
+                    <li><a href="#setup"><i class="fas fa-play"></i> Configuration</a></li>
+                    <li><a href="#structure"><i class="fas fa-folder-tree"></i> Structure</a></li>
+                    <li><a href="#api"><i class="fas fa-plug"></i> API</a></li>
+                    <li><a href="#deployment"><i class="fas fa-rocket"></i> Déploiement</a></li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-section">
+                <h3 class="sidebar-title">Ressources</h3>
+                <ul class="sidebar-nav">
+                    <li><a href="#github"><i class="fab fa-github"></i> GitHub</a></li>
+                    <li><a href="#docs"><i class="fas fa-book"></i> Documentation</a></li>
+                    <li><a href="#contributing"><i class="fas fa-heart"></i> Contribuer</a></li>
+                    <li><a href="#license"><i class="fas fa-balance-scale"></i> Licence</a></li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1><i class="fas fa-code"></i> Code Source</h1>
+                <p>Explorez l'architecture moderne et les fonctionnalités avancées de QuestBot Advanced. Code open-source, documentation complète et exemples pratiques.</p>
+                <div class="mt-4">
+                    <a href="#github" class="btn btn-primary">
+                        <i class="fab fa-github"></i>
+                        Voir sur GitHub
+                    </a>
+                    <a href="#setup" class="btn btn-secondary">
+                        <i class="fas fa-download"></i>
+                        Installation
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture Section -->
+        <section id="architecture" class="architecture">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Architecture Moderne</h2>
+                    <p class="section-subtitle">Système modulaire et scalable conçu pour la performance et la maintenabilité</p>
+                </div>
+                
+                <div class="architecture-grid">
+                    <div class="architecture-card">
+                        <div class="architecture-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h3 class="architecture-title">Architecture Modulaire</h3>
+                        <p class="architecture-description">Séparation claire des responsabilités avec des modules indépendants pour les commandes, événements et utilitaires. Facilite la maintenance et l'ajout de nouvelles fonctionnalités.</p>
+                    </div>
+                    
+                    <div class="architecture-card">
+                        <div class="architecture-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h3 class="architecture-title">Base de Données JSON</h3>
+                        <p class="architecture-description">Système de stockage léger et performant avec sauvegardes automatiques, rotation des backups et optimisation de la structure des données.</p>
+                    </div>
+                    
+                    <div class="architecture-card">
+                        <div class="architecture-icon">
+                            <i class="fas fa-paint-brush"></i>
+                        </div>
+                        <h3 class="architecture-title">Canvas Avancé</h3>
+                        <p class="architecture-description">Génération d'images dynamiques avec Node Canvas, effets visuels, gradients, animations et gestion optimisée de la mémoire.</p>
+                    </div>
+                    
+                    <div class="architecture-card">
+                        <div class="architecture-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h3 class="architecture-title">Configuration Flexible</h3>
+                        <p class="architecture-description">Système de configuration en deux couches : .env pour les secrets et config.js pour la logique métier. Hot-reload et validation automatique.</p>
+                    </div>
+                    
+                    <div class="architecture-card">
+                        <div class="architecture-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="architecture-title">Sécurité Renforcée</h3>
+                        <p class="architecture-description">Gestion des permissions, validation des entrées, protection contre les injections et système de logs de sécurité.</p>
+                    </div>
+                    
+                    <div class="architecture-card">
+                        <div class="architecture-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h3 class="architecture-title">Performance</h3>
+                        <p class="architecture-description">Cache intelligent, opérations asynchrones, limitation des taux et monitoring en temps réel des performances système.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code Examples Section -->
+        <section id="examples" class="code-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Exemples de Code</h2>
+                    <p class="section-subtitle">Découvrez les fonctionnalités clés à travers des exemples de code commentés</p>
+                </div>
+                
+                <div class="code-grid">
+                    <!-- Bot Principal -->
+                    <div class="code-block">
+                        <div class="code-header">
+                            <div class="code-title">
+                                <i class="fas fa-robot"></i>
+                                Bot Principal - index.js
+                            </div>
+                            <div class="code-language">JavaScript</div>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="code-content">
+                            <pre><code class="language-javascript">class AdvancedQuestBot {
+    constructor() {
+        this.client = new Client({
+            intents: [
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.MessageContent,
+                GatewayIntentBits.GuildVoiceStates,
+                GatewayIntentBits.GuildMembers
+            ]
+        });
+
+        this.commands = new Collection();
+        this.database = this.loadDatabase();
+        this.achievements = config.achievements;
+        
+        // Statistiques en temps réel
+        this.stats = {
+            messagesProcessed: 0,
+            achievementsUnlocked: 0,
+            uptime: Date.now()
+        };
+    }
+
+    async checkAchievements(userId, guildId, guild) {
+        const userData = this.getUserData(userId, guildId);
+        const newAchievements = [];
+
+        for (const category in this.achievements) {
+            for (const achievement of this.achievements[category]) {
+                const achievementId = `${category}_${achievement.id}`;
+                
+                if (!userData.achievements.includes(achievementId)) {
+                    const progress = this.getProgress(userData, category, achievement);
+                    
+                    if (progress >= achievement.requirement) {
+                        userData.achievements.push(achievementId);
+                        userData.experience += achievement.xp || 100;
+                        newAchievements.push({ achievement, category });
+                        
+                        // Attribution automatique du rôle
+                        if (achievement.roleId) {
+                            await this.assignRole(guild, userId, achievement.roleId);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (newAchievements.length > 0) {
+            await this.sendAchievementNotification(userId, guildId, newAchievements, guild);
+        }
+
+        this.saveDatabase();
+        return newAchievements;
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Generation -->
+                    <div class="code-block">
+                        <div class="code-header">
+                            <div class="code-title">
+                                <i class="fas fa-paint-brush"></i>
+                                Génération Canvas - utils/canvas.js
+                            </div>
+                            <div class="code-language">JavaScript</div>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="code-content">
+                            <pre><code class="language-javascript">async createAchievementCard(user, achievement, category) {
+    const canvas = createCanvas(800, 400);
+    const ctx = canvas.getContext('2d');
+
+    // Arrière-plan avec gradient basé sur la rareté
+    const rarity = config.rarities[achievement.rarity] || config.rarities.common;
+    await this.drawRarityBackground(ctx, 800, 400, rarity);
+
+    // Effet de particules dynamiques
+    this.drawParticleEffect(ctx, 800, 400, rarity.color);
+
+    // Avatar utilisateur avec effet glow
+    await this.drawGlowingAvatar(ctx, user, 100, 150, 100, rarity.color);
+
+    // Texte principal avec effet 3D
+    this.draw3DText(ctx, achievement.name, 250, 180, '48px bold Arial', '#FFFFFF', rarity.color);
+
+    // Description stylisée
+    this.drawStyledText(ctx, achievement.description, 250, 230, '24px Arial', '#E0E0E0', 700);
+
+    // Emoji géant avec glow
+    this.drawGlowingEmoji(ctx, achievement.emoji || '🏆', 850, 200, 120);
+
+    // Badge de rareté animé
+    this.drawRarityBadge(ctx, rarity, 20, 20);
+
+    return canvas.toBuffer();
+}
+
+async drawGlowingAvatar(ctx, user, x, y, radius, glowColor) {
+    try {
+        const avatar = await loadImage(user.displayAvatarURL({ extension: 'png', size: 256 }));
+        
+        // Effet glow multiple
+        ctx.save();
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(x + radius, y + radius, radius + 10, 0, Math.PI * 2);
+        ctx.fillStyle = glowColor + '40';
+        ctx.fill();
+        ctx.restore();
+
+        // Avatar circulaire
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x + radius, y + radius, radius, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(avatar, x, y, radius * 2, radius * 2);
+        ctx.restore();
+
+        // Bordure animée
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(x + radius, y + radius, radius + 2, 0, Math.PI * 2);
+        ctx.stroke();
+
+    } catch (error) {
+        console.error('Erreur génération avatar:', error);
+        // Fallback vers avatar par défaut
+        this.drawDefaultAvatar(ctx, x, y, radius);
+    }
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Configuration System -->
+                    <div class="code-block">
+                        <div class="code-header">
+                            <div class="code-title">
+                                <i class="fas fa-cog"></i>
+                                Système de Configuration - config.js
+                            </div>
+                            <div class="code-language">JavaScript</div>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="code-content">
+                            <pre><code class="language-javascript">module.exports = {
+    // Configuration des couleurs thématiques
+    colors: {
+        primary: '#FFD700',
+        secondary: '#FFA500',
+        success: '#00FF7F',
+        error: '#FF4444',
+        experience: '#9932CC'
+    },
+
+    // Système d'expérience et niveaux
+    experience: {
+        baseXpPerLevel: 1000,
+        bonusXpMultiplier: 1.2,
+        maxLevel: 100,
+        
+        rewards: {
+            message: 5,
+            reaction_given: 2,
+            reaction_received: 3,
+            voice_minute: 1,
+            achievement: 100,
+            boost: 500
+        }
+    },
+
+    // Configuration des exploits par catégorie
+    achievements: {
+        messages: [
+            {
+                id: 'bavard_1',
+                name: 'BAVARD-E',
+                description: 'Envoyez vos premiers messages sur le serveur',
+                requirement: 5,
+                xp: 100,
+                emoji: '💬',
+                rarity: 'common',
+                roleId: process.env.ROLE_BAVARD_ID
+            },
+            {
+                id: 'eloquent_1',
+                name: 'ÉLOQUENT-E',
+                description: 'Participez activement aux conversations',
+                requirement: 100,
+                xp: 300,
+                emoji: '🗣️',
+                rarity: 'uncommon',
+                roleId: process.env.ROLE_ELOQUENT_ID
+            }
+        ],
+        
+        voice: [
+            {
+                id: 'locuteur_1',
+                name: 'LOCUTEUR-RICE',
+                description: 'Passez du temps de qualité en vocal',
+                requirement: 60, // minutes
+                xp: 200,
+                emoji: '🎤',
+                rarity: 'uncommon',
+                roleId: process.env.ROLE_LOCUTEUR_ID
+            }
+        ]
+    },
+
+    // Système de rareté avec couleurs
+    rarities: {
+        common: { name: 'Commun', color: '#FFFFFF', emoji: '⚪' },
+        uncommon: { name: 'Peu commun', color: '#1EFF00', emoji: '🟢' },
+        rare: { name: 'Rare', color: '#0066FF', emoji: '🔵' },
+        epic: { name: 'Épique', color: '#9933FF', emoji: '🟣' },
+        legendary: { name: 'Légendaire', color: '#FF6600', emoji: '🟠' }
+    }
+};</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Command Handler -->
+                    <div class="code-block">
+                        <div class="code-header">
+                            <div class="code-title">
+                                <i class="fas fa-terminal"></i>
+                                Gestionnaire de Commandes - commands/user/stats.js
+                            </div>
+                            <div class="code-language">JavaScript</div>
+                            <button class="copy-btn" onclick="copyCode(this)">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="code-content">
+                            <pre><code class="language-javascript">module.exports = {
+    data: {
+        name: 'stats',
+        description: 'Affiche vos statistiques détaillées',
+        aliases: ['statistiques', 'stat'],
+        usage: '[utilisateur]',
+        category: 'user',
+        cooldown: 30000
+    },
+
+    async execute(message, args, bot) {
+        const targetUser = message.mentions.users.first() || message.author;
+        const userData = bot.getUserData(targetUser.id, message.guild.id);
+        
+        try {
+            // Génération de l'image de profil avec Canvas
+            const profileImage = await bot.createProgressCard(
+                targetUser.id, 
+                message.guild.id, 
+                targetUser
+            );
+            
+            const attachment = new AttachmentBuilder(profileImage, { 
+                name: 'profile.png' 
+            });
+            
+            // Création de l'embed avec statistiques détaillées
+            const embed = new EmbedBuilder()
+                .setTitle(`📊 Statistiques de ${targetUser.displayName}`)
+                .setDescription(`Progression détaillée sur **${message.guild.name}**`)
+                .setColor(config.colors.primary)
+                .setImage('attachment://profile.png')
+                .addFields([
+                    {
+                        name: '🏆 Résumé',
+                        value: `**Niveau:** ${userData.level}\n**XP:** ${bot.formatNumber(userData.experience)}\n**Exploits:** ${userData.achievements.length}`,
+                        inline: true
+                    },
+                    {
+                        name: '📈 Activité',
+                        value: `**Messages:** ${bot.formatNumber(userData.messagesCount)}\n**Temps vocal:** ${bot.formatDuration(userData.voiceTime)}\n**Événements:** ${userData.eventsParticipated}`,
+                        inline: true
+                    },
+                    {
+                        name: '❤️ Social',
+                        value: `**Réactions données:** ${userData.reactionsGiven}\n**Réactions reçues:** ${userData.reactionsReceived}\n**Félicitations:** ${userData.congratulationsSent}/${userData.congratulationsReceived}`,
+                        inline: true
+                    }
+                ])
+                .setFooter({ 
+                    text: `Membre depuis • ${new Date(userData.joinedAt).toLocaleDateString('fr-FR')}` 
+                })
+                .setTimestamp();
+            
+            await message.reply({ embeds: [embed], files: [attachment] });
+            
+        } catch (error) {
+            console.error('Erreur génération profil:', error);
+            
+            // Fallback vers embed simple
+            const fallbackEmbed = new EmbedBuilder()
+                .setTitle(`📊 Statistiques de ${targetUser.displayName}`)
+                .setThumbnail(targetUser.displayAvatarURL())
+                .addFields([
+                    { name: '💬 Messages', value: userData.messagesCount.toString(), inline: true },
+                    { name: '🎙️ Temps vocal', value: `${userData.voiceTime} min`, inline: true },
+                    { name: '🏆 Niveau', value: userData.level.toString(), inline: true }
+                ])
+                .setColor(config.colors.primary);
+            
+            await message.reply({ embeds: [fallbackEmbed] });
+        }
+    }
+};</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tech Stack Section -->
+        <section id="tech-stack" class="tech-stack">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Technologies Utilisées</h2>
+                    <p class="section-subtitle">Stack technique moderne pour des performances optimales</p>
+                </div>
+                
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-icon">
+                            <i class="fab fa-js-square"></i>
+                        </div>
+                        <div class="tech-name">Node.js</div>
+                        <div class="tech-description">Runtime JavaScript côté serveur</div>
+                    </div>
+                    
+                    <div class="tech-item">
+                        <div class="tech-icon">
+                            <i class="fab fa-discord"></i>
+                        </div>
+                        <div class="tech-name">Discord.js</div>
+                        <div class="tech-description">Bibliothèque Discord v14</div>
+                    </div>
+                    
+                    <div class="tech-item">
+                        <div class="tech-icon">
+                            <i class="fas fa-paint-brush"></i>
+                        </div>
+                        <div class="tech-name">Canvas</div>
+                        <div class="tech-description">Génération d'images dynamiques</div>
+                    </div>
+                    
+                    <div class="tech-item">
+                        <div class="tech-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="tech-name">JSON Database</div>
+                        <div class="tech-description">Stockage léger et performant</div>
+                    </div>
+                    
+                    <div class="tech-item">
+                        <div class="tech-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="tech-name">dotenv</div>
+                        <div class="tech-description">Gestion sécurisée des variables</div>
+                    </div>
+                    
+                    <div class="tech-item">
+                        <div class="tech-icon">
+                            <i class="fab fa-docker"></i>
+                        </div>
+                        <div class="tech-name">Docker</div>
+                        <div class="tech-description">Conteneurisation optionnelle</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Code Section -->
+        <section id="features-code" class="code-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Fonctionnalités Techniques</h2>
+                    <p class="section-subtitle">Implémentations avancées et optimisations</p>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h3 class="feature-title">Performance Optimisée</h3>
+                        <p class="feature-description">Cache intelligent, opérations asynchrones, limitation des taux et monitoring en temps réel pour des performances optimales même avec de gros serveurs.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <h3 class="feature-title">Hot Reload</h3>
+                        <p class="feature-description">Rechargement à chaud des commandes et configurations sans redémarrage du bot. Idéal pour le développement et les mises à jour en production.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-backup"></i>
+                        </div>
+                        <h3 class="feature-title">Sauvegarde Automatique</h3>
+                        <p class="feature-description">Système de backup automatique avec rotation, compression et restauration. Scripts de maintenance inclus pour une gestion simplifiée.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3 class="feature-title">Analytics Avancées</h3>
+                        <p class="feature-description">Tracking détaillé des performances, statistiques d'utilisation et métriques système avec tableaux de bord en temps réel.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-code-branch"></i>
+                        </div>
+                        <h3 class="feature-title">Architecture Modulaire</h3>
+                        <p class="feature-description">Code organisé en modules indépendants avec séparation claire des responsabilités. Facilite la maintenance et l'extension.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bug"></i>
+                        </div>
+                        <h3 class="feature-title">Gestion d'Erreurs</h3>
+                        <p class="feature-description">Système robuste de gestion d'erreurs avec fallbacks automatiques, logs détaillés et notifications admin en cas de problème.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>QuestBot Advanced</h3>
+                <p>Code source open-source disponible sur GitHub. Contributions bienvenues !</p>
+                <div class="mt-4">
+                    <a href="#github" style="margin-right: 1rem;"><i class="fab fa-github"></i></a>
+                    <a href="#" style="margin-right: 1rem;"><i class="fab fa-discord"></i></a>
+                    <a href="#"><i class="fas fa-globe"></i></a>
+                </div>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Code & Docs</h3>
+                <ul>
+                    <li><a href="#github">Repository GitHub</a></li>
+                    <li><a href="#docs">Documentation API</a></li>
+                    <li><a href="#examples">Exemples de Code</a></li>
+                    <li><a href="#changelog">Changelog</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Développement</h3>
+                <ul>
+                    <li><a href="#contributing">Guide de Contribution</a></li>
+                    <li><a href="#issues">Signaler un Bug</a></li>
+                    <li><a href="#setup">Configuration Dev</a></li>
+                    <li><a href="#testing">Tests</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Ressources</h3>
+                <ul>
+                    <li><a href="#license">Licence MIT</a></li>
+                    <li><a href="#security">Sécurité</a></li>
+                    <li><a href="#roadmap">Roadmap</a></li>
+                    <li><a href="#support">Support</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2024 QuestBot Advanced. Code source sous licence MIT.</p>
+        </div>
+    </footer>
+
+    <!-- Prism.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <script>
+        // Theme Toggle (même que index.html)
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.querySelector('.theme-toggle i');
+            
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.setAttribute('data-theme', 'light');
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Load saved theme
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            const body = document.body;
+            const themeIcon = document.querySelector('.theme-toggle i');
+            
+            body.setAttribute('data-theme', savedTheme);
+            themeIcon.className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Copy Code Function
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-block');
+            const code = codeBlock.querySelector('code').textContent;
+            
+            navigator.clipboard.writeText(code).then(() => {
+                const icon = button.querySelector('i');
+                const originalClass = icon.className;
+                
+                icon.className = 'fas fa-check';
+                button.style.color = 'var(--accent-success)';
+                
+                setTimeout(() => {
+                    icon.className = originalClass;
+                    button.style.color = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Erreur lors de la copie:', err);
+            });
+        }
+
+        // Smooth Scrolling
+        function initSmoothScrolling() {
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        
+                        // Close sidebar on mobile
+                        if (window.innerWidth <= 768) {
+                            document.getElementById('sidebar').classList.remove('open');
+                        }
+                    }
+                });
+            });
+        }
+
+        // Active Navigation
+        function updateActiveNavigation() {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.sidebar-nav a');
+            
+            function updateActive() {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - 100;
+                    if (scrollY >= sectionTop) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+            
+            window.addEventListener('scroll', updateActive);
+            updateActive();
+        }
+
+        // Click outside to close sidebar
+        function initClickOutside() {
+            document.addEventListener('click', (e) => {
+                const sidebar = document.getElementById('sidebar');
+                const menuToggle = document.querySelector('.menu-toggle');
+                
+                if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        }
+
+        // Initialize everything
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            initSmoothScrolling();
+            updateActiveNavigation();
+            initClickOutside();
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>
