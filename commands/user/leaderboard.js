@@ -1,5 +1,3 @@
-
-
 // commands/user/leaderboard.js
 const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 
@@ -7,14 +5,14 @@ module.exports = {
     data: {
         name: 'leaderboard',
         description: 'Affiche le classement des membres',
-        aliases: ['top', 'classement', 'ranking'],
+        aliases: ['top', 'classement', 'ranking', 'lb'],
         usage: '[catégorie] [limite]',
         category: 'user',
         cooldown: 30000
     },
 
     async execute(message, args, bot) {
-        const validCategories = ['messages', 'voice', 'level', 'experience', 'reactions_given', 'reactions_received', 'achievements'];
+        const validCategories = ['messages', 'voice', 'level', 'experience', 'reactions_given', 'reactions_received', 'achievements', 'camera', 'stream'];
         const category = args[0]?.toLowerCase() || 'level';
         const limit = Math.min(parseInt(args[1]) || 10, 20);
         
@@ -24,29 +22,61 @@ module.exports = {
         }
         
         try {
-            // Créer l'image du leaderboard avec Canvas
-            const leaderboardImage = await bot.createLeaderboard(message.guild.id, category, limit);
-            const attachment = new AttachmentBuilder(leaderboardImage, { name: 'leaderboard.png' });
-            
             // Récupérer et trier les utilisateurs
             const users = this.getUsersData(bot.database.users, message.guild.id, category);
+            
+            if (users.length === 0) {
+                const embed = bot.functions.createInfoEmbed(
+                    'Aucune donnée',
+                    'Aucun utilisateur n\'a de données pour cette catégorie.'
+                );
+                return message.reply({ embeds: [embed] });
+            }
+
             const topUsers = users.slice(0, limit);
             
             // Trouver la position de l'utilisateur actuel
             const userPosition = users.findIndex(u => u.userId === message.author.id) + 1;
             const userStats = users.find(u => u.userId === message.author.id);
             
+            // Créer l'image du leaderboard avec Canvas
+            let attachment = null;
+            try {
+                const leaderboardImage = await bot.createLeaderboard(message.guild.id, category, limit);
+                attachment = new AttachmentBuilder(leaderboardImage, { name: 'leaderboard.png' });
+            } catch (canvasError) {
+                console.warn('⚠️ Erreur Canvas pour le leaderboard:', canvasError.message);
+            }
+
             const embed = new EmbedBuilder()
                 .setTitle(`🏆 Classement - ${this.getCategoryDisplayName(category)}`)
                 .setDescription(`Top ${limit} des membres les plus actifs sur **${message.guild.name}**`)
                 .setColor('#FFD700')
-                .setImage('attachment://leaderboard.png')
                 .setFooter({ 
                     text: userPosition > 0 ? 
                         `Votre position: #${userPosition} avec ${userStats?.value || 0} ${this.getCategoryUnit(category)}` : 
                         'Vous n\'apparaissez pas encore dans ce classement'
                 })
                 .setTimestamp();
+
+            if (attachment) {
+                embed.setImage('attachment://leaderboard.png');
+            } else {
+                // Fallback textuel si Canvas échoue
+                let leaderboardText = '';
+                for (let i = 0; i < Math.min(topUsers.length, 10); i++) {
+                    const user = topUsers[i];
+                    const medal = i < 3 ? ['🥇', '🥈', '🥉'][i] : `**#${i + 1}**`;
+                    
+                    try {
+                        const discordUser = await bot.client.users.fetch(user.userId);
+                        leaderboardText += `${medal} ${discordUser.displayName} - ${bot.formatNumber(user.value)} ${this.getCategoryUnit(category)}\n`;
+                    } catch {
+                        leaderboardText += `${medal} Utilisateur inconnu - ${bot.formatNumber(user.value)} ${this.getCategoryUnit(category)}\n`;
+                    }
+                }
+                embed.setDescription(embed.data.description + '\n\n' + leaderboardText);
+            }
             
             // Menu de sélection pour changer de catégorie
             const selectMenu = new ActionRowBuilder()
@@ -89,37 +119,42 @@ module.exports = {
                                 value: 'achievements',
                                 emoji: '🏆',
                                 default: category === 'achievements'
+                            },
+                            {
+                                label: 'Réactions données',
+                                description: 'Classement par réactions données',
+                                value: 'reactions_given',
+                                emoji: '👍',
+                                default: category === 'reactions_given'
+                            },
+                            {
+                                label: 'Réactions reçues',
+                                description: 'Classement par réactions reçues',
+                                value: 'reactions_received',
+                                emoji: '❤️',
+                                default: category === 'reactions_received'
                             }
                         ])
                 );
             
-            await message.reply({ 
-                embeds: [embed], 
-                files: [attachment], 
-                components: [selectMenu] 
-            });
-            
-        } catch (error) {
-            console.error('Erreur lors de la création du leaderboard:', error);
-            
-            // Fallback vers un embed texte
-            const embed = new EmbedBuilder()
-                .setTitle(`🏆 Classement - ${this.getCategoryDisplayName(category)}`)
-                .setColor('#FFD700')
-                .setDescription('⚠️ Impossible de générer l\'image, voici le classement textuel:')
-                .setTimestamp();
-            
-            const users = this.getUsersData(bot.database.users, message.guild.id, category);
-            const topUsers = users.slice(0, limit);
-            
-            let leaderboardText = '';
-            for (let i = 0; i < topUsers.length; i++) {
-                const user = topUsers[i];
-                const medal = i < 3 ? ['🥇', '🥈', '🥉'][i] : `**#${i + 1}**`;
-                leaderboardText += `${medal} <@${user.userId}> - ${user.value} ${this.getCategoryUnit(category)}\n`;
+            const replyOptions = { embeds: [embed], components: [selectMenu] };
+            if (attachment) {
+                replyOptions.files = [attachment];
             }
             
-            embed.setDescription(embed.data.description + '\n\n' + leaderboardText);
+            await message.reply(replyOptions);
+            
+        } catch (error) {
+            bot.functions.logError('Leaderboard Command', error, {
+                userId: message.author.id,
+                guildId: message.guild.id,
+                category
+            });
+
+            const embed = bot.functions.createErrorEmbed(
+                'Erreur du classement',
+                'Une erreur est survenue lors de la génération du classement.'
+            );
             await message.reply({ embeds: [embed] });
         }
     },
@@ -154,6 +189,15 @@ module.exports = {
                     case 'achievements':
                         value = userData.achievements?.length || 0;
                         break;
+                    case 'camera':
+                        value = userData.cameraTime || 0;
+                        break;
+                    case 'stream':
+                        value = userData.streamTime || 0;
+                        break;
+                    case 'congratulations':
+                        value = (userData.congratulationsSent || 0) + (userData.congratulationsReceived || 0);
+                        break;
                 }
                 
                 if (value > 0) {
@@ -173,7 +217,10 @@ module.exports = {
             experience: 'Expérience',
             reactions_given: 'Réactions données',
             reactions_received: 'Réactions reçues',
-            achievements: 'Exploits débloqués'
+            achievements: 'Exploits débloqués',
+            camera: 'Temps caméra',
+            stream: 'Temps stream',
+            congratulations: 'Félicitations'
         };
         return names[category] || category;
     },
@@ -186,7 +233,10 @@ module.exports = {
             experience: 'XP',
             reactions_given: 'réactions',
             reactions_received: 'réactions',
-            achievements: 'exploits'
+            achievements: 'exploits',
+            camera: 'minutes',
+            stream: 'minutes',
+            congratulations: 'félicitations'
         };
         return units[category] || '';
     }
