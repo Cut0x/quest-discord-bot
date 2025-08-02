@@ -1,43 +1,56 @@
-
-
 // commands/user/achievements.js
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
     data: {
         name: 'achievements',
-        description: 'Affiche tous les exploits disponibles',
-        aliases: ['exploits', 'quests', 'quêtes'],
-        usage: '[catégorie]',
+        description: 'Affiche tous les exploits disponibles ou vos exploits',
+        aliases: ['exploits', 'quests', 'quêtes', 'ach'],
+        usage: '[catégorie|@utilisateur]',
         category: 'user',
         cooldown: 15000
     },
 
     async execute(message, args, bot) {
-        const category = args[0]?.toLowerCase();
-        const categories = Object.keys(bot.achievements);
-        
-        if (category && !categories.includes(category)) {
-            const availableCategories = categories.map(cat => `\`${cat}\``).join(', ');
-            return message.reply(`❌ Catégorie inconnue. Catégories disponibles: ${availableCategories}`);
+        // Déterminer si c'est un utilisateur ou une catégorie
+        let targetUser = message.author;
+        let category = null;
+
+        if (args[0]) {
+            const mention = message.mentions.users.first();
+            if (mention) {
+                targetUser = mention;
+            } else if (Object.keys(bot.achievements).includes(args[0].toLowerCase())) {
+                category = args[0].toLowerCase();
+            } else {
+                return message.reply(`❌ Catégorie inconnue. Catégories disponibles: ${Object.keys(bot.achievements).map(c => `\`${c}\``).join(', ')}`);
+            }
         }
+
+        const userData = bot.getUserData(targetUser.id, message.guild.id);
         
-        const targetCategory = category || categories[0];
-        const achievements = bot.achievements[targetCategory];
-        const userData = bot.getUserData(message.author.id, message.guild.id);
+        if (category) {
+            return this.showCategoryAchievements(message, category, userData, bot);
+        } else {
+            return this.showUserAchievements(message, targetUser, userData, bot);
+        }
+    },
+
+    async showCategoryAchievements(message, category, userData, bot) {
+        const achievements = bot.achievements[category];
+        const categoryInfo = bot.categories[category];
         
         const embed = new EmbedBuilder()
-            .setTitle(`🏆 Exploits - ${bot.categories[targetCategory]?.name || targetCategory}`)
-            .setDescription(`${bot.categories[targetCategory]?.description || 'Liste des exploits'}\n\n${bot.categories[targetCategory]?.emoji || '🏆'} **${achievements.length}** exploits dans cette catégorie`)
-            .setColor(bot.categories[targetCategory]?.color || '#FFD700')
+            .setTitle(`🏆 Exploits - ${categoryInfo?.name || category}`)
+            .setDescription(`${categoryInfo?.description || 'Liste des exploits'}\n\n${categoryInfo?.emoji || '🏆'} **${achievements.length}** exploits dans cette catégorie`)
+            .setColor(categoryInfo?.color || '#FFD700')
             .setThumbnail(message.guild.iconURL());
         
-        // Afficher les exploits avec progression
         let description = '';
-        achievements.forEach((achievement, index) => {
-            const achievementId = `${targetCategory}_${achievement.id}`;
+        achievements.forEach((achievement) => {
+            const achievementId = `${category}_${achievement.id}`;
             const isUnlocked = userData.achievements.includes(achievementId);
-            const currentProgress = this.getCurrentProgress(userData, targetCategory, achievement);
+            const currentProgress = this.getCurrentProgress(userData, category, achievement);
             const progressBar = this.createProgressBar(currentProgress, achievement.requirement);
             const percentage = Math.min(Math.round((currentProgress / achievement.requirement) * 100), 100);
             
@@ -54,31 +67,113 @@ module.exports = {
         
         embed.setDescription(embed.data.description + '\n\n' + description);
         
-        // Boutons de navigation entre catégories
-        const row = new ActionRowBuilder();
-        const currentIndex = categories.indexOf(targetCategory);
+        // Boutons de navigation
+        const categories = Object.keys(bot.achievements);
+        const currentIndex = categories.indexOf(category);
         
+        const row = new ActionRowBuilder();
         if (categories.length > 1) {
             row.addComponents(
                 new ButtonBuilder()
                     .setCustomId(`achievements_${categories[currentIndex - 1] || categories[categories.length - 1]}`)
                     .setLabel('◀ Précédent')
-                    .setStyle(ButtonStyle.Primary)
-                    .setDisabled(categories.length <= 1),
+                    .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
-                    .setCustomId(`achievements_overview`)
+                    .setCustomId('achievements_overview')
                     .setLabel('📋 Vue d\'ensemble')
                     .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
                     .setCustomId(`achievements_${categories[currentIndex + 1] || categories[0]}`)
                     .setLabel('Suivant ▶')
                     .setStyle(ButtonStyle.Primary)
-                    .setDisabled(categories.length <= 1)
             );
         }
         
         const components = row.components.length > 0 ? [row] : [];
         await message.reply({ embeds: [embed], components });
+    },
+
+    async showUserAchievements(message, targetUser, userData, bot) {
+        const totalAchievements = Object.values(bot.achievements).flat().length;
+        const unlockedAchievements = userData.achievements;
+        const completionRate = Math.round((unlockedAchievements.length / totalAchievements) * 100);
+
+        const embed = new EmbedBuilder()
+            .setTitle(`🏆 Exploits de ${targetUser.displayName}`)
+            .setDescription(`Progression des exploits sur **${message.guild.name}**`)
+            .setThumbnail(targetUser.displayAvatarURL())
+            .setColor('#FFD700')
+            .addFields([
+                {
+                    name: '📊 Progression globale',
+                    value: `**Exploits débloqués:** ${unlockedAchievements.length}/${totalAchievements}\n**Taux de complétion:** ${completionRate}%\n**Niveau:** ${userData.level} (${bot.formatNumber(userData.experience)} XP)`,
+                    inline: false
+                }
+            ]);
+
+        // Afficher les exploits par catégorie
+        for (const [categoryName, achievements] of Object.entries(bot.achievements)) {
+            const categoryAchievements = achievements.filter(ach => 
+                unlockedAchievements.includes(`${categoryName}_${ach.id}`)
+            );
+            
+            const categoryInfo = bot.categories[categoryName];
+            const categoryProgress = `${categoryAchievements.length}/${achievements.length}`;
+            
+            if (categoryAchievements.length > 0) {
+                const achievementsList = categoryAchievements
+                    .slice(0, 5) // Limiter à 5 pour éviter les messages trop longs
+                    .map(ach => `${ach.emoji || '🏆'} ${ach.name}`)
+                    .join('\n');
+                
+                embed.addFields({
+                    name: `${categoryInfo?.emoji || '🏆'} ${categoryInfo?.name || categoryName} (${categoryProgress})`,
+                    value: achievementsList + (categoryAchievements.length > 5 ? `\n... et ${categoryAchievements.length - 5} autre(s)` : ''),
+                    inline: true
+                });
+            } else {
+                embed.addFields({
+                    name: `${categoryInfo?.emoji || '🏆'} ${categoryInfo?.name || categoryName} (${categoryProgress})`,
+                    value: '*Aucun exploit débloqué*',
+                    inline: true
+                });
+            }
+        }
+
+        // Derniers exploits débloqués
+        if (unlockedAchievements.length > 0) {
+            const recentAchievements = unlockedAchievements.slice(-5).reverse();
+            const recentList = recentAchievements.map(achievementId => {
+                const [category, id] = achievementId.split('_');
+                const achievement = bot.achievements[category]?.find(a => a.id === id);
+                return achievement ? `${achievement.emoji || '🏆'} ${achievement.name}` : '❓ Exploit inconnu';
+            }).join('\n');
+
+            embed.addFields({
+                name: '🆕 Derniers exploits débloqués',
+                value: recentList,
+                inline: false
+            });
+        }
+
+        // Boutons d'action
+        const row = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId('view_all_achievements')
+                    .setLabel('📋 Tous les exploits')
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
+                    .setCustomId('achievement_progress')
+                    .setLabel('📈 Progression détaillée')
+                    .setStyle(ButtonStyle.Secondary)
+            );
+
+        embed.setFooter({ 
+            text: `${completionRate}% complété • ${unlockedAchievements.length}/${totalAchievements} exploits` 
+        }).setTimestamp();
+
+        await message.reply({ embeds: [embed], components: [row] });
     },
 
     getCurrentProgress(userData, category, achievement) {

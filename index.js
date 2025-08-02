@@ -1,12 +1,13 @@
-const { Client, GatewayIntentBits, Collection, EmbedBuilder, AttachmentBuilder, ChannelType } = require('discord.js');
+// index.js - QuestBot Advanced (Version corrigée)
+const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { createCanvas, loadImage, registerFont } = require('canvas');
 require('dotenv').config();
 
 const config = require('./config.js');
+const BotFunctions = require('./utils/functions.js');
 
-class AdvancedQuestBot {
+class QuestBot {
     constructor() {
         this.client = new Client({
             intents: [
@@ -25,8 +26,7 @@ class AdvancedQuestBot {
         this.cooldowns = new Collection();
         this.database = this.loadDatabase();
         this.voiceTracking = new Map();
-        this.achievements = config.achievements;
-        this.categories = config.categories;
+        this.functions = new BotFunctions(config);
         
         // Statistiques du bot
         this.stats = {
@@ -41,15 +41,25 @@ class AdvancedQuestBot {
 
     async init() {
         try {
+            // Vérifier les variables d'environnement requises
+            this.checkRequiredEnvVars();
+            
             // Créer les dossiers nécessaires
             this.createDirectories();
-            
-            // Charger les polices personnalisées si disponibles
-            this.loadFonts();
             
             // Charger les commandes et événements
             await this.loadCommands();
             await this.loadEvents();
+            
+            // Planifier le nettoyage du cache
+            setInterval(() => {
+                this.functions.cleanCache();
+            }, 300000); // 5 minutes
+            
+            // Planifier les sauvegardes automatiques
+            setInterval(() => {
+                this.saveDatabase();
+            }, 600000); // 10 minutes
             
             // Démarrer le bot
             await this.client.login(process.env.DISCORD_TOKEN);
@@ -61,8 +71,30 @@ class AdvancedQuestBot {
         }
     }
 
+    checkRequiredEnvVars() {
+        const required = ['DISCORD_TOKEN'];
+        const missing = required.filter(env => !process.env[env]);
+        
+        if (missing.length > 0) {
+            console.error('❌ Variables d\'environnement manquantes:', missing.join(', '));
+            throw new Error('Configuration incomplète');
+        }
+        
+        // Avertissements pour les variables optionnelles mais recommandées
+        const recommended = [
+            'NOTIFICATION_CHANNEL_ID',
+            'ADMIN_IDS',
+            'PREFIX'
+        ];
+        
+        const missingRecommended = recommended.filter(env => !process.env[env]);
+        if (missingRecommended.length > 0) {
+            console.warn('⚠️ Variables d\'environnement recommandées manquantes:', missingRecommended.join(', '));
+        }
+    }
+
     createDirectories() {
-        const dirs = ['commands', 'events', 'assets', 'backups', 'temp'];
+        const dirs = ['commands', 'events', 'assets', 'backups', 'temp', 'utils'];
         dirs.forEach(dir => {
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
@@ -71,28 +103,18 @@ class AdvancedQuestBot {
         });
     }
 
-    loadFonts() {
-        try {
-            const fontsPath = path.join(__dirname, 'assets', 'fonts');
-            if (fs.existsSync(fontsPath)) {
-                const fontFiles = fs.readdirSync(fontsPath).filter(file => file.endsWith('.ttf') || file.endsWith('.otf'));
-                fontFiles.forEach(font => {
-                    const fontPath = path.join(fontsPath, font);
-                    const fontName = font.split('.')[0];
-                    registerFont(fontPath, { family: fontName });
-                    console.log(`🔤 Police chargée: ${fontName}`);
-                });
-            }
-        } catch (error) {
-            console.log('⚠️ Aucune police personnalisée trouvée, utilisation des polices par défaut');
-        }
-    }
-
     loadDatabase() {
         try {
             if (fs.existsSync('./database.json')) {
                 const data = JSON.parse(fs.readFileSync('./database.json', 'utf8'));
                 console.log('📊 Base de données chargée');
+                
+                // Valider et corriger la structure si nécessaire
+                if (!data.version) data.version = '2.0.0';
+                if (!data.users) data.users = {};
+                if (!data.guilds) data.guilds = {};
+                if (!data.settings) data.settings = {};
+                
                 return data;
             }
         } catch (error) {
@@ -111,18 +133,7 @@ class AdvancedQuestBot {
     }
 
     saveDatabase() {
-        try {
-            // Créer une sauvegarde avant l'écriture
-            if (fs.existsSync('./database.json')) {
-                const backup = `./backups/database_${Date.now()}.json`;
-                fs.copyFileSync('./database.json', backup);
-            }
-            
-            this.database.lastModified = new Date().toISOString();
-            fs.writeFileSync('./database.json', JSON.stringify(this.database, null, 2));
-        } catch (error) {
-            console.error('❌ Erreur lors de la sauvegarde:', error);
-        }
+        return this.functions.saveDatabase(this.database);
     }
 
     async loadCommands() {
@@ -133,6 +144,7 @@ class AdvancedQuestBot {
             const folderPath = path.join(commandsPath, folder);
             if (!fs.existsSync(folderPath)) {
                 fs.mkdirSync(folderPath, { recursive: true });
+                console.log(`📁 Dossier de commandes créé: ${folder}/`);
                 continue;
             }
             
@@ -141,6 +153,7 @@ class AdvancedQuestBot {
             for (const file of commandFiles) {
                 const filePath = path.join(folderPath, file);
                 try {
+                    // Supprimer le cache pour permettre le rechargement à chaud
                     delete require.cache[require.resolve(filePath)];
                     const command = require(filePath);
                     
@@ -148,479 +161,108 @@ class AdvancedQuestBot {
                         this.commands.set(command.data.name, command);
                         console.log(`✅ Commande chargée: ${command.data.name}`);
                     } else {
-                        console.log(`⚠️ Commande ignorée ${file}: structure invalide`);
+                        console.log(`⚠️ Commande ignorée ${file}: structure invalide (manque 'data' ou 'execute')`);
                     }
                 } catch (error) {
-                    console.error(`❌ Erreur lors du chargement de ${file}:`, error);
+                    console.error(`❌ Erreur lors du chargement de ${file}:`, error.message);
                 }
             }
         }
+        
+        console.log(`📚 ${this.commands.size} commande(s) chargée(s) au total`);
     }
 
     async loadEvents() {
         const eventsPath = path.join(__dirname, 'events');
-        if (!fs.existsSync(eventsPath)) return;
+        if (!fs.existsSync(eventsPath)) {
+            fs.mkdirSync(eventsPath, { recursive: true });
+            console.log('📁 Dossier events créé');
+            return;
+        }
 
         const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
         
         for (const file of eventFiles) {
             const filePath = path.join(eventsPath, file);
             try {
+                // Supprimer le cache pour permettre le rechargement à chaud
                 delete require.cache[require.resolve(filePath)];
                 const event = require(filePath);
                 
+                if (!event.name || !event.execute) {
+                    console.log(`⚠️ Événement ignoré ${file}: structure invalide`);
+                    continue;
+                }
+                
                 if (event.once) {
-                    this.client.once(event.name, (...args) => event.execute(...args, this));
+                    this.client.once(event.name, (...args) => {
+                        try {
+                            event.execute(...args, this);
+                        } catch (error) {
+                            this.functions.logError(`Event ${event.name}`, error);
+                        }
+                    });
                 } else {
-                    this.client.on(event.name, (...args) => event.execute(...args, this));
+                    this.client.on(event.name, (...args) => {
+                        try {
+                            event.execute(...args, this);
+                        } catch (error) {
+                            this.functions.logError(`Event ${event.name}`, error);
+                        }
+                    });
                 }
                 console.log(`🎯 Événement chargé: ${event.name}`);
             } catch (error) {
-                console.error(`❌ Erreur lors du chargement de l'événement ${file}:`, error);
+                console.error(`❌ Erreur lors du chargement de l'événement ${file}:`, error.message);
             }
         }
     }
 
+    // =================== MÉTHODES PRINCIPALES ===================
+
     getUserData(userId, guildId) {
-        if (!this.database.users[userId]) {
-            this.database.users[userId] = {};
-        }
-        if (!this.database.users[userId][guildId]) {
-            this.database.users[userId][guildId] = {
-                // Statistiques de base
-                messagesCount: 0,
-                reactionsGiven: 0,
-                reactionsReceived: 0,
-                voiceTime: 0,
-                eventsParticipated: 0,
-                cameraTime: 0,
-                streamTime: 0,
-                boosts: 0,
-                congratulationsSent: 0,
-                congratulationsReceived: 0,
-                
-                // Métadonnées
-                achievements: [],
-                joinedAt: new Date().toISOString(),
-                lastActivity: new Date().toISOString(),
-                level: 1,
-                experience: 0,
-                
-                // Suivi temporel
-                dailyStats: {},
-                weeklyStats: {},
-                monthlyStats: {},
-                
-                // Sessions en cours
-                lastVoiceJoin: null,
-                cameraSessionStart: null,
-                streamSessionStart: null
-            };
-        }
-        
-        // Mettre à jour la dernière activité
-        this.database.users[userId][guildId].lastActivity = new Date().toISOString();
-        return this.database.users[userId][guildId];
+        const userData = this.functions.getUserData(this.database, userId, guildId);
+        return this.functions.validateUserData(userData);
     }
 
     async checkAchievements(userId, guildId, guild, options = {}) {
-        const userData = this.getUserData(userId, guildId);
-        const newAchievements = [];
-        const silent = options.silent || false;
-
-        for (const category in this.achievements) {
-            for (const achievement of this.achievements[category]) {
-                const achievementId = `${category}_${achievement.id}`;
-                
-                if (!userData.achievements.includes(achievementId)) {
-                    let achieved = false;
-                    let currentProgress = 0;
-                    
-                    switch (category) {
-                        case 'messages':
-                            currentProgress = userData.messagesCount;
-                            achieved = currentProgress >= achievement.requirement;
-                            break;
-                        case 'reactions':
-                            currentProgress = achievement.type === 'given' ? userData.reactionsGiven : userData.reactionsReceived;
-                            achieved = currentProgress >= achievement.requirement;
-                            break;
-                        case 'voice':
-                            currentProgress = userData.voiceTime;
-                            achieved = currentProgress >= achievement.requirement;
-                            break;
-                        case 'events':
-                            currentProgress = userData.eventsParticipated;
-                            achieved = currentProgress >= achievement.requirement;
-                            break;
-                        case 'camera':
-                            currentProgress = userData.cameraTime;
-                            achieved = currentProgress >= achievement.requirement;
-                            break;
-                        case 'stream':
-                            currentProgress = userData.streamTime;
-                            achieved = currentProgress >= achievement.requirement;
-                            break;
-                        case 'boosts':
-                            currentProgress = userData.boosts;
-                            achieved = currentProgress >= achievement.requirement;
-                            break;
-                        case 'congratulations':
-                            currentProgress = achievement.type === 'sent' ? userData.congratulationsSent : userData.congratulationsReceived;
-                            achieved = currentProgress >= achievement.requirement;
-                            break;
-                    }
-
-                    if (achieved) {
-                        userData.achievements.push(achievementId);
-                        userData.experience += achievement.xp || 100;
-                        
-                        // Calculer le nouveau niveau
-                        const newLevel = Math.floor(userData.experience / 1000) + 1;
-                        const leveledUp = newLevel > userData.level;
-                        userData.level = newLevel;
-                        
-                        newAchievements.push({ 
-                            achievement, 
-                            category, 
-                            leveledUp,
-                            newLevel: userData.level
-                        });
-                        
-                        this.stats.achievementsUnlocked++;
-                        
-                        // Attribuer le rôle si configuré
-                        if (achievement.roleId) {
-                            try {
-                                const member = await guild.members.fetch(userId);
-                                const role = guild.roles.cache.get(achievement.roleId);
-                                if (member && role && !member.roles.cache.has(role.id)) {
-                                    await member.roles.add(role);
-                                    console.log(`🏆 Rôle ${role.name} attribué à ${member.displayName}`);
-                                }
-                            } catch (error) {
-                                console.error('❌ Erreur lors de l\'attribution du rôle:', error);
-                            }
-                        }
-                    }
-                }
-            }
+        const achievements = await this.functions.checkAchievements(
+            this.database, 
+            userId, 
+            guildId, 
+            guild, 
+            options
+        );
+        
+        if (achievements.length > 0) {
+            this.stats.achievementsUnlocked += achievements.length;
+            this.saveDatabase();
         }
-
-        if (newAchievements.length > 0 && !silent) {
-            await this.sendAchievementNotification(userId, guildId, newAchievements, guild);
-        }
-
-        this.saveDatabase();
-        return newAchievements;
+        
+        return achievements;
     }
 
     async sendAchievementNotification(userId, guildId, achievements, guild) {
-        try {
-            const user = await this.client.users.fetch(userId);
-            const notificationChannel = guild.channels.cache.get(process.env.NOTIFICATION_CHANNEL_ID);
-            
-            for (const { achievement, category, leveledUp, newLevel } of achievements) {
-                // Créer une image d'achievement avec Canvas
-                const achievementCard = await this.createAchievementCard(user, achievement, category, leveledUp, newLevel);
-                
-                const embed = new EmbedBuilder()
-                    .setTitle('🎉 Nouvel exploit débloqué !')
-                    .setDescription(`**${user.displayName}** vient de débloquer l'exploit **${achievement.name}** ${achievement.emoji || '🏆'} !\n\n${achievement.description || 'Félicitations pour cet accomplissement !'}\n\n${leveledUp ? `🆙 **Niveau supérieur atteint:** ${newLevel} !` : ''}`)
-                    .setColor(config.colors.success)
-                    .setImage('attachment://achievement.png')
-                    .setTimestamp()
-                    .setFooter({ text: `${config.serverName} • QuestBot Advanced` });
-
-                const attachment = new AttachmentBuilder(achievementCard, { name: 'achievement.png' });
-
-                if (notificationChannel) {
-                    await notificationChannel.send({ 
-                        embeds: [embed], 
-                        files: [attachment] 
-                    });
-                }
-
-                // Envoyer en privé si configuré
-                if (config.notifications.sendPrivate) {
-                    try {
-                        await user.send({ 
-                            embeds: [embed], 
-                            files: [attachment] 
-                        });
-                    } catch (error) {
-                        console.log(`⚠️ Impossible d'envoyer le message privé à ${user.tag}`);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('❌ Erreur lors de l\'envoi de notification:', error);
-        }
+        return this.functions.sendAchievementNotification(userId, guildId, achievements, guild);
     }
 
+    // =================== MÉTHODES CANVAS ===================
+
     async createAchievementCard(user, achievement, category, leveledUp = false, newLevel = 1) {
-        const canvas = createCanvas(800, 400);
-        const ctx = canvas.getContext('2d');
-
-        // Arrière-plan avec gradient
-        const gradient = ctx.createLinearGradient(0, 0, 800, 400);
-        gradient.addColorStop(0, config.colors.primary + '40');
-        gradient.addColorStop(1, config.colors.secondary + '40');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 800, 400);
-
-        // Bordure
-        ctx.strokeStyle = config.colors.primary;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(10, 10, 780, 380);
-
-        // Avatar utilisateur
-        try {
-            const avatar = await loadImage(user.displayAvatarURL({ extension: 'png', size: 128 }));
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(120, 120, 60, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(avatar, 60, 60, 120, 120);
-            ctx.restore();
-        } catch (error) {
-            // Avatar par défaut en cas d'erreur
-            ctx.fillStyle = config.colors.secondary;
-            ctx.beginPath();
-            ctx.arc(120, 120, 60, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Cercle autour de l'avatar
-        ctx.strokeStyle = config.colors.primary;
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.arc(120, 120, 66, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Nom de l'utilisateur
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 32px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(user.displayName, 220, 80);
-
-        // Nom de l'achievement
-        ctx.fillStyle = config.colors.primary;
-        ctx.font = 'bold 48px Arial';
-        ctx.fillText(achievement.name, 220, 140);
-
-        // Emoji de l'achievement
-        ctx.font = '64px Arial';
-        ctx.fillText(achievement.emoji || '🏆', 220, 220);
-
-        // Description
-        if (achievement.description) {
-            ctx.fillStyle = '#CCCCCC';
-            ctx.font = '24px Arial';
-            const words = achievement.description.split(' ');
-            let line = '';
-            let y = 260;
-            
-            for (let n = 0; n < words.length; n++) {
-                const testLine = line + words[n] + ' ';
-                const metrics = ctx.measureText(testLine);
-                const testWidth = metrics.width;
-                
-                if (testWidth > 500 && n > 0) {
-                    ctx.fillText(line, 220, y);
-                    line = words[n] + ' ';
-                    y += 30;
-                } else {
-                    line = testLine;
-                }
-            }
-            ctx.fillText(line, 220, y);
-        }
-
-        // Niveau si level up
-        if (leveledUp) {
-            ctx.fillStyle = config.colors.experience;
-            ctx.font = 'bold 28px Arial';
-            ctx.textAlign = 'right';
-            ctx.fillText(`NIVEAU ${newLevel}`, 770, 350);
-        }
-
-        // Date
-        ctx.fillStyle = '#888888';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(new Date().toLocaleDateString('fr-FR'), 770, 380);
-
-        return canvas.toBuffer();
+        return this.functions.createAchievementCard(user, achievement, category, leveledUp, newLevel);
     }
 
     async createProgressCard(userId, guildId, user) {
         const userData = this.getUserData(userId, guildId);
-        const canvas = createCanvas(1000, 600);
-        const ctx = canvas.getContext('2d');
-
-        // Arrière-plan
-        const gradient = ctx.createLinearGradient(0, 0, 1000, 600);
-        gradient.addColorStop(0, '#1a1a2e');
-        gradient.addColorStop(1, '#16213e');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 1000, 600);
-
-        // En-tête
-        ctx.fillStyle = config.colors.primary;
-        ctx.fillRect(0, 0, 1000, 100);
-
-        // Avatar
-        try {
-            const avatar = await loadImage(user.displayAvatarURL({ extension: 'png', size: 128 }));
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(80, 50, 35, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(avatar, 45, 15, 70, 70);
-            ctx.restore();
-        } catch (error) {
-            // Avatar par défaut
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(80, 50, 35, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Nom et niveau
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 32px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(user.displayName, 140, 45);
-        
-        ctx.font = '20px Arial';
-        ctx.fillText(`Niveau ${userData.level} • ${userData.experience} XP`, 140, 75);
-
-        // Statistiques
-        let y = 150;
-        const stats = [
-            { label: 'Messages', value: userData.messagesCount, emoji: '💬' },
-            { label: 'Réactions données', value: userData.reactionsGiven, emoji: '👍' },
-            { label: 'Réactions reçues', value: userData.reactionsReceived, emoji: '❤️' },
-            { label: 'Temps vocal', value: `${userData.voiceTime}min`, emoji: '🎙️' },
-            { label: 'Événements', value: userData.eventsParticipated, emoji: '🎭' },
-            { label: 'Félicitations envoyées', value: userData.congratulationsSent, emoji: '👏' }
-        ];
-
-        stats.forEach((stat, index) => {
-            const x = (index % 2) * 500 + 50;
-            const currentY = y + Math.floor(index / 2) * 80;
-
-            // Fond de la stat
-            ctx.fillStyle = '#2c2c54';
-            ctx.fillRect(x, currentY, 400, 60);
-
-            // Emoji et label
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = '24px Arial';
-            ctx.textAlign = 'left';
-            ctx.fillText(`${stat.emoji} ${stat.label}`, x + 20, currentY + 25);
-
-            // Valeur
-            ctx.font = 'bold 28px Arial';
-            ctx.textAlign = 'right';
-            ctx.fillText(stat.value.toString(), x + 380, currentY + 40);
-        });
-
-        return canvas.toBuffer();
+        return this.functions.createProgressCard(userId, guildId, user, userData);
     }
 
     async createLeaderboard(guildId, category = 'messages', limit = 10) {
-        const canvas = createCanvas(800, 600);
-        const ctx = canvas.getContext('2d');
-
-        // Arrière-plan
-        const gradient = ctx.createLinearGradient(0, 0, 800, 600);
-        gradient.addColorStop(0, '#667eea');
-        gradient.addColorStop(1, '#764ba2');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 800, 600);
-
-        // Titre
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 36px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`🏆 TOP ${limit.toString().toUpperCase()} - ${this.categories[category]?.name.toUpperCase() || category.toUpperCase()}`, 400, 60);
-
-        // Récupérer les données des utilisateurs
-        const users = [];
-        for (const userId in this.database.users) {
-            if (this.database.users[userId][guildId]) {
-                const userData = this.database.users[userId][guildId];
-                let value = 0;
-                
-                switch (category) {
-                    case 'messages':
-                        value = userData.messagesCount;
-                        break;
-                    case 'reactions_given':
-                        value = userData.reactionsGiven;
-                        break;
-                    case 'reactions_received':
-                        value = userData.reactionsReceived;
-                        break;
-                    case 'voice':
-                        value = userData.voiceTime;
-                        break;
-                    case 'level':
-                        value = userData.level;
-                        break;
-                    case 'experience':
-                        value = userData.experience;
-                        break;
-                }
-                
-                if (value > 0) {
-                    users.push({ userId, value });
-                }
-            }
-        }
-
-        // Trier et limiter
-        users.sort((a, b) => b.value - a.value);
-        const topUsers = users.slice(0, limit);
-
-        // Afficher le classement
-        let y = 120;
-        for (let i = 0; i < topUsers.length; i++) {
-            const user = topUsers[i];
-            const position = i + 1;
-            
-            // Fond de la ligne
-            ctx.fillStyle = position <= 3 ? '#FFD700' + '40' : '#FFFFFF' + '20';
-            ctx.fillRect(50, y, 700, 40);
-
-            // Position
-            ctx.fillStyle = position <= 3 ? '#FFD700' : '#FFFFFF';
-            ctx.font = 'bold 24px Arial';
-            ctx.textAlign = 'left';
-            ctx.fillText(`#${position}`, 70, y + 28);
-
-            // Nom d'utilisateur (simulé)
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = '20px Arial';
-            ctx.fillText(`Utilisateur ${user.userId.slice(0, 8)}...`, 140, y + 28);
-
-            // Valeur
-            ctx.font = 'bold 20px Arial';
-            ctx.textAlign = 'right';
-            const suffix = category === 'voice' ? ' min' : '';
-            ctx.fillText(user.value + suffix, 720, y + 28);
-
-            y += 50;
-        }
-
-        return canvas.toBuffer();
+        return this.functions.createLeaderboard(guildId, category, limit, this.database, this.client);
     }
 
-    // Gestion des cooldowns
+    // =================== GESTION DES COOLDOWNS ===================
+
     setCooldown(userId, commandName, duration) {
         if (!this.cooldowns.has(commandName)) {
             this.cooldowns.set(commandName, new Collection());
@@ -642,37 +284,128 @@ class AdvancedQuestBot {
         return timestamps.get(userId);
     }
 
-    // Utilitaires
+    // =================== UTILITAIRES ===================
+
     formatNumber(num) {
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        return this.functions.formatNumber(num);
     }
 
     formatDuration(minutes) {
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        
-        if (hours > 0) {
-            return `${hours}h ${mins}min`;
-        }
-        return `${mins}min`;
+        return this.functions.formatDuration(minutes);
     }
 
     getProgressPercentage(current, target) {
-        return Math.min(Math.round((current / target) * 100), 100);
+        return this.functions.getProgressPercentage(current, target);
+    }
+
+    // =================== MÉTHODES DE DÉBOGAGE ET MAINTENANCE ===================
+
+    async reloadCommand(commandName) {
+        try {
+            // Chercher le fichier de commande
+            const commandFolders = ['user', 'admin', 'utility'];
+            let foundPath = null;
+            
+            for (const folder of commandFolders) {
+                const folderPath = path.join(__dirname, 'commands', folder);
+                const filePath = path.join(folderPath, `${commandName}.js`);
+                
+                if (fs.existsSync(filePath)) {
+                    foundPath = filePath;
+                    break;
+                }
+            }
+            
+            if (!foundPath) {
+                throw new Error(`Commande ${commandName} non trouvée`);
+            }
+            
+            // Supprimer le cache et recharger
+            delete require.cache[require.resolve(foundPath)];
+            const command = require(foundPath);
+            
+            if ('data' in command && 'execute' in command) {
+                this.commands.set(command.data.name, command);
+                console.log(`🔄 Commande rechargée: ${command.data.name}`);
+                return true;
+            } else {
+                throw new Error('Structure de commande invalide');
+            }
+        } catch (error) {
+            this.functions.logError('Reload Command', error, { command: commandName });
+            return false;
+        }
+    }
+
+    getStats() {
+        const uptime = Date.now() - this.stats.uptime;
+        return {
+            ...this.stats,
+            uptime: this.functions.formatDuration(Math.floor(uptime / 1000 / 60)),
+            guilds: this.client.guilds.cache.size,
+            users: this.client.users.cache.size,
+            commands: this.commands.size,
+            database: {
+                users: Object.keys(this.database.users).length,
+                totalUserGuildData: Object.values(this.database.users)
+                    .reduce((acc, user) => acc + Object.keys(user).length, 0)
+            }
+        };
+    }
+
+    // =================== NETTOYAGE ET FERMETURE ===================
+
+    async shutdown() {
+        console.log('🔄 Arrêt du bot en cours...');
+        
+        // Sauvegarder la base de données
+        this.saveDatabase();
+        
+        // Nettoyer les ressources
+        this.functions.cleanCache();
+        
+        // Fermer la connexion Discord
+        await this.client.destroy();
+        
+        console.log('✅ Bot arrêté proprement');
+        process.exit(0);
     }
 }
 
-// Gestion des erreurs non capturées
-process.on('unhandledRejection', error => {
+// =================== GESTION DES ERREURS GLOBALES ===================
+
+process.on('unhandledRejection', (error, promise) => {
     console.error('❌ Unhandled promise rejection:', error);
+    console.error('Promise:', promise);
 });
 
-process.on('uncaughtException', error => {
+process.on('uncaughtException', (error) => {
     console.error('❌ Uncaught exception:', error);
     process.exit(1);
 });
 
-// Lancement du bot
-const bot = new AdvancedQuestBot();
+// Gestion propre de l'arrêt
+process.on('SIGINT', async () => {
+    console.log('\n🔄 Signal SIGINT reçu, arrêt du bot...');
+    if (global.bot) {
+        await global.bot.shutdown();
+    } else {
+        process.exit(0);
+    }
+});
 
-module.exports = AdvancedQuestBot;
+process.on('SIGTERM', async () => {
+    console.log('\n🔄 Signal SIGTERM reçu, arrêt du bot...');
+    if (global.bot) {
+        await global.bot.shutdown();
+    } else {
+        process.exit(0);
+    }
+});
+
+// =================== LANCEMENT DU BOT ===================
+
+const bot = new QuestBot();
+global.bot = bot;
+
+module.exports = QuestBot;

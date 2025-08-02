@@ -1,473 +1,492 @@
-# 🎮 QuestBot Advanced - Système d'Exploits Discord
+# 🎮 QuestBot Advanced
 
-<div align="center">
+**Bot Discord avancé pour le suivi d'exploits et statistiques communautaires avec interface graphique Canvas.**
 
-![QuestBot Advanced](https://img.shields.io/badge/QuestBot-Advanced-gold?style=for-the-badge&logo=discord)
-![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)
-![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=for-the-badge&logo=node.js)
-![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)
-
-**Bot Discord de gamification avancé avec tracking d'exploits, génération d'images Canvas et système de niveaux**
-
-[📖 Documentation](#-installation) • [🚀 Fonctionnalités](#-fonctionnalités) • [⚙️ Configuration](#️-configuration) • [🤝 Support](#-support)
-
-</div>
-
----
+[![Discord.js](https://img.shields.io/badge/Discord.js-v14.14.1-blue.svg)](https://discord.js.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
+[![Canvas](https://img.shields.io/badge/Canvas-2.11.2-orange.svg)](https://www.npmjs.com/package/canvas)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## ✨ Fonctionnalités
 
-### 🏆 Système d'Exploits Complet
-- **50+ exploits configurables** répartis en 8 catégories
-- **Système de rareté** (Commun → Légendaire)
-- **Attribution automatique de rôles** Discord
-- **Notifications personnalisées** avec images générées
+### 🏆 Système d'exploits complet
+- **Plus de 40 exploits** répartis en 8 catégories
+- **Progression en temps réel** avec notifications automatiques
+- **Raretés multiples** : Commun, Peu commun, Rare, Épique, Légendaire
+- **Système de niveaux** basé sur l'expérience (XP)
 
-### 📊 Tracking Avancé
-- **Messages envoyés** - Comptage en temps réel
-- **Temps vocal** - Tracking précis des minutes en salon vocal
-- **Réactions** - Données et reçues avec détection intelligente
-- **Félicitations** - Reconnaissance automatique des encouragements
-- **Événements** - Participation aux activités communautaires
-- **Caméra/Stream** - Sessions vidéo et partage d'écran
-- **Boosts serveur** - Détection automatique des soutiens
+### 📊 Tracking automatique
+- **Messages** - Comptage automatique des messages envoyés
+- **Vocal** - Suivi du temps passé en salon vocal
+- **Caméra & Stream** - Temps avec caméra/partage d'écran activé
+- **Réactions** - Réactions données et reçues
+- **Boosts serveur** - Récompenses pour les boosters
+- **Félicitations** - Détection automatique des encouragements
 
-### 🎨 Images Générées avec Canvas
-- **Profils visuels** avec statistiques avancées
-- **Cartes d'exploits** avec effets de rareté
-- **Classements visuels** avec podiums animés
-- **Barres de progression** interactives
-- **Effets visuels** (glow, particules, gradients)
+### 🎨 Interface graphique
+- **Images générées** avec Canvas pour les profils et exploits
+- **Cartes personnalisées** pour chaque exploit débloqué
+- **Leaderboards visuels** avec classements interactifs
+- **Profils utilisateur** avec statistiques détaillées
 
-### 📈 Système de Niveaux & XP
-- **Expérience dynamique** basée sur l'activité
-- **Niveaux illimités** avec seuils configurables
-- **Multiplicateurs de bonus** pour les événements spéciaux
-- **Récompenses automatiques** en XP pour chaque action
+### 🔧 Administration avancée
+- **Panel d'administration** complet pour les modérateurs
+- **Gestion des données** utilisateur avec export/import
+- **Analytics serveur** avec statistiques détaillées
+- **Sauvegarde automatique** avec historique
 
-### 🔧 Configuration Avancée
-- **Fichier .env** pour les données sensibles
-- **config.js** pour personnaliser le système
-- **Messages personnalisables** avec variables dynamiques
-- **Rôles et canaux** entièrement configurables
+## 📋 Prérequis
 
----
+### 🖥️ Environnement système
+- **Node.js** v18.0.0 ou supérieur
+- **NPM** ou **Yarn** pour la gestion des packages
+- **Git** pour cloner le repository
+
+### 🎨 Dépendances Canvas (obligatoire)
+Canvas nécessite des outils de compilation selon votre OS :
+
+#### Ubuntu/Debian
+```bash
+sudo apt-get update
+sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+```
+
+#### CentOS/RHEL/Fedora
+```bash
+sudo yum groupinstall "Development Tools"
+sudo yum install cairo-devel pango-devel libjpeg-turbo-devel giflib-devel
+```
+
+#### macOS
+```bash
+brew install pkg-config cairo pango libpng jpeg giflib librsvg
+```
+
+#### Windows
+```bash
+npm install --global windows-build-tools
+```
+
+### 🤖 Bot Discord
+1. Créez une application sur [Discord Developer Portal](https://discord.com/developers/applications)
+2. Créez un bot et récupérez le **token**
+3. Activez les **Intents** suivants :
+   - `SERVER MEMBERS INTENT`
+   - `MESSAGE CONTENT INTENT`
+   - `PRESENCE INTENT`
 
 ## 🚀 Installation
 
-### 📋 Prérequis
-
+### 1. Cloner le projet
 ```bash
-# Versions requises
-Node.js >= 18.0.0
-npm >= 8.0.0
-
-# Dépendances système pour Canvas
-# Ubuntu/Debian:
-sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
-
-# macOS:
-brew install pkg-config cairo pango libpng jpeg giflib librsvg
-
-# Windows:
-# Suivez la documentation officielle de node-canvas
-```
-
-### 📥 Installation du Bot
-
-```bash
-# 1. Cloner le repository
 git clone https://github.com/Cut0x/quest-discord-bot.git
-cd questbot-advanced
+cd quest-discord-bot
+```
 
-# 2. Installer les dépendances
+### 2. Installer les dépendances
+```bash
 npm install
-
-# 3. Configurer l'environnement
-cp example.env .env
-# Éditer .env avec vos valeurs
-
-# 4. Configurer le système
-# Éditer config.js selon vos besoins
-
-# 5. Lancer le bot
-npm start
 ```
 
-### 🤖 Configuration du Bot Discord
+### 3. Configuration
+```bash
+# Copier le fichier de configuration
+cp .env.example .env
 
-1. **Créer une application** sur le [Discord Developer Portal](https://discord.com/developers/applications)
-2. **Créer un bot** et copier le token
-3. **Configurer les permissions** requises :
-   - ✅ Voir les salons
-   - ✅ Envoyer des messages
-   - ✅ Intégrer des liens
-   - ✅ Joindre des fichiers
-   - ✅ Lire l'historique des messages
-   - ✅ Ajouter des réactions
-   - ✅ Utiliser des émojis externes
-   - ✅ Gérer les rôles
-   - ✅ Se connecter au vocal
-   - ✅ Parler
+# Éditer avec vos valeurs
+nano .env
+```
 
----
+### 4. Configuration du fichier .env
 
-## ⚙️ Configuration
-
-### 🔐 Variables d'Environnement (.env)
-
+**Variables obligatoires :**
 ```env
-# Bot Discord
 DISCORD_TOKEN=your_bot_token_here
-GUILD_ID=your_guild_id_here
+```
 
-# Canaux
-NOTIFICATION_CHANNEL_ID=channel_id_for_achievements
-LEVELUP_CHANNEL_ID=channel_id_for_level_ups
-WELCOME_CHANNEL_ID=channel_id_for_welcome
-ADMIN_LOG_CHANNEL_ID=channel_id_for_admin_logs
-
-# Permissions
-ADMIN_IDS=user_id_1,user_id_2
-STAFF_IDS=staff_id_1,staff_id_2
-ADMIN_ROLE_ID=role_id_for_admins
-MODERATOR_ROLE_ID=role_id_for_mods
-
-# GitHub & Support
-GITHUB_REPO_URL=https://github.com/your_username/questbot-advanced
-SUPPORT_URL=https://discord.gg/your_support_server
-
-# Configuration avancée
+**Variables recommandées :**
+```env
+PREFIX=!
 NODE_ENV=production
+NOTIFICATION_CHANNEL_ID=123456789012345678
+ADMIN_IDS=123456789012345678,987654321098765432
+```
+
+**Variables optionnelles :**
+```env
+LEVELUP_CHANNEL_ID=123456789012345678
+WELCOME_CHANNEL_ID=123456789012345678
+ADMIN_LOG_CHANNEL_ID=123456789012345678
+STAFF_IDS=123456789012345678
+ADMIN_ROLE_ID=123456789012345678
 DEBUG_MODE=false
-LOG_LEVEL=info
 ```
 
-### 🎯 Configuration des Exploits (config.js)
+### 5. Obtenir les IDs Discord
 
-```javascript
-// Exemple d'exploit personnalisé
-achievements: {
-  messages: [
-    {
-      id: 'bavard_custom',
-      name: 'BAVARD-E CONFIRMÉ-E',
-      description: 'Envoyez 100 messages sur le serveur',
-      requirement: 100,
-      xp: 500,
-      emoji: '💬',
-      rarity: 'uncommon',
-      roleId: 'ROLE_ID_HERE' // Optionnel
-    }
-  ]
-}
+1. **Activez le Mode Développeur** dans Discord :
+   - Paramètres utilisateur → Avancé → Mode développeur ✅
+
+2. **Récupérez les IDs** :
+   - **Clic droit** sur un canal → **Copier l'ID**
+   - **Clic droit** sur un utilisateur → **Copier l'ID**
+   - **Clic droit** sur un rôle → **Copier l'ID**
+
+### 6. Démarrer le bot
+```bash
+# Mode production
+npm start
+
+# Mode développement (avec rechargement auto)
+npm run dev
 ```
 
-### 🎨 Personnalisation des Couleurs
+## 📁 Structure du projet
 
-```javascript
-colors: {
-  primary: '#FFD700',      // Or principal
-  secondary: '#FFA500',    // Orange secondaire
-  success: '#00FF7F',      // Vert succès
-  error: '#FF4444',        // Rouge erreur
-  experience: '#9932CC'    // Violet expérience
-}
+```
+quest-discord-bot/
+├── 📄 index.js                 # Fichier principal du bot
+├── 📄 config.js               # Configuration des exploits et paramètres
+├── 📄 package.json            # Dépendances et scripts
+├── 📄 .env.example            # Template de configuration
+├── 📄 README.md               # Documentation (ce fichier)
+│
+├── 📁 utils/
+│   └── 📄 functions.js        # Fonctions utilitaires centralisées
+│
+├── 📁 commands/
+│   ├── 📁 user/               # Commandes utilisateur
+│   │   ├── 📄 stats.js        # Statistiques utilisateur
+│   │   ├── 📄 profile.js      # Profil complet
+│   │   ├── 📄 achievements.js # Exploits et progression
+│   │   ├── 📄 leaderboard.js  # Classements
+│   │   └── 📄 help.js         # Aide et navigation
+│   │
+│   ├── 📁 admin/              # Commandes administrateur
+│   │   ├── 📄 admin.js        # Panel d'administration
+│   │   ├── 📄 achievements-manage.js # Gestion des exploits
+│   │   └── 📄 data-manage.js  # Gestion des données
+│   │
+│   └── 📁 utility/            # Commandes utilitaires
+│       ├── 📄 ping.js         # Test de latence
+│       ├── 📄 info.js         # Informations bot
+│       ├── 📄 server.js       # Informations serveur
+│       ├── 📄 user.js         # Informations utilisateur
+│       └── 📄 prefix.js       # Affichage du préfixe
+│
+├── 📁 events/                 # Événements Discord
+│   ├── 📄 ready.js           # Bot prêt
+│   ├── 📄 messageCreate.js   # Nouveau message
+│   ├── 📄 messageReactionAdd.js # Réaction ajoutée
+│   ├── 📄 voiceStateUpdate.js # Changement vocal
+│   ├── 📄 guildMemberUpdate.js # Mise à jour membre
+│   └── 📄 interactionCreate.js # Interactions (boutons, menus)
+│
+├── 📁 assets/                 # Ressources
+│   ├── 📁 fonts/             # Polices personnalisées (.ttf, .otf)
+│   └── 📁 images/            # Images statiques
+│
+├── 📁 backups/               # Sauvegardes automatiques
+└── 📁 temp/                  # Fichiers temporaires
 ```
 
----
+## 🎯 Commandes disponibles
 
-## 🎮 Commandes
+### 👤 Commandes utilisateur
 
-### 👤 Commandes Utilisateur
+| Commande | Description | Aliases | Usage |
+|----------|-------------|---------|--------|
+| `!stats` | Affiche vos statistiques | `statistiques`, `stat` | `!stats [@user]` |
+| `!profile` | Profil complet avec image | `profil`, `me`, `p` | `!profile [@user]` |
+| `!achievements` | Liste des exploits | `exploits`, `ach` | `!achievements [catégorie]` |
+| `!leaderboard` | Classements serveur | `top`, `lb`, `ranking` | `!leaderboard [catégorie] [limite]` |
+| `!help` | Aide interactive | `aide`, `commands` | `!help [commande]` |
 
-| Commande | Description | Exemple |
-|----------|-------------|---------|
-| `!stats [utilisateur]` | Affiche les statistiques détaillées | `!stats @user` |
-| `!profile [utilisateur]` | Profil complet avec image Canvas | `!profile` |
-| `!achievements [catégorie]` | Liste des exploits disponibles | `!achievements messages` |
-| `!leaderboard [catégorie]` | Classement des membres | `!leaderboard level` |
-| `!help [commande]` | Aide générale ou spécifique | `!help stats` |
+### 🛡️ Commandes administrateur
 
-### 🛡️ Commandes Administrateur
+| Commande | Description | Usage |
+|----------|-------------|--------|
+| `!admin` | Panel d'administration | `!admin [action]` |
+| `!admin stats` | Statistiques du bot | `!admin stats` |
+| `!admin reload` | Recharger une commande | `!admin reload [commande]` |
+| `!admin backup` | Sauvegarde manuelle | `!admin backup` |
+| `!admin reset` | Reset utilisateur | `!admin reset @user` |
+| `!achievements-manage` | Gestion des exploits | `!achievements-manage [give/remove] @user [exploit]` |
+| `!data-manage` | Gestion des données | `!data-manage [view/edit/export] @user` |
 
-| Commande | Description | Exemple |
-|----------|-------------|---------|
-| `!admin [action]` | Panel d'administration | `!admin stats` |
-| `!events add @user [nombre]` | Ajouter des participations | `!events add @user 5` |
-| `!events bulk [nombre]` | Ajout en masse via réactions | `!events bulk 3` |
-| `!admin reset @user` | Reset complet d'un utilisateur | `!admin reset @user` |
-| `!admin backup` | Créer une sauvegarde | `!admin backup` |
+### 🔧 Commandes utilitaires
 
-### 🔧 Commandes Utilitaires
+| Commande | Description | Aliases | Usage |
+|----------|-------------|---------|--------|
+| `!ping` | Test de latence | `latency` | `!ping` |
+| `!info` | Informations bot | `botinfo`, `about` | `!info` |
+| `!server` | Informations serveur | `serveur`, `guild` | `!server` |
+| `!user` | Informations utilisateur | `userinfo`, `membre` | `!user [@user]` |
+| `!prefix` | Affiche le préfixe | `préfixe` | `!prefix` |
 
-| Commande | Description | Exemple |
-|----------|-------------|---------|
-| `!ping` | Latence du bot | `!ping` |
-| `!info` | Informations détaillées du bot | `!info` |
-| `!server` | Statistiques du serveur | `!server` |
-| `!user [utilisateur]` | Informations Discord d'un membre | `!user @someone` |
-| `!invite` | Lien d'invitation du bot | `!invite` |
+## 🏆 Système d'exploits
 
----
-
-## 📊 Système de Progression
-
-### 🏆 Catégories d'Exploits
+### 📊 Catégories disponibles
 
 #### 💬 Messages
-- **BAVARD-E** (5 messages) → 100 XP
-- **ÉLOQUENT-E** (100 messages) → 300 XP
-- **COMMUNICATEUR-RICE** (500 messages) → 800 XP
-- **ORATEUR-RICE SUPRÊME** (1000 messages) → 1500 XP
+- **PREMIERS PAS** - Envoyez votre premier message (1 message)
+- **BAVARD-E** - Participez aux conversations (5 messages)
+- **ÉLOQUENT-E** - Communiquez activement (100 messages)
+- **COMMUNICATEUR-RICE** - Pilier de la communication (500 messages)
+- **ORATEUR-RICE SUPRÊME** - Maître de la communication (1000 messages)
 
 #### ❤️ Réactions
-- **PREMIER LIKE** (1 réaction donnée) → 25 XP
-- **AIMABLE** (10 réactions reçues) → 150 XP
-- **RÉACTIF-VE** (100 réactions données) → 400 XP
-- **STAR DES RÉACTIONS** (500 réactions reçues) → 1000 XP
+- **PREMIER LIKE** - Donnez votre première réaction
+- **AIMABLE** - Recevez de l'amour (10 réactions reçues)
+- **RÉACTIF-VE** - Exprimez vos émotions (100 réactions données)
+- **STAR DES RÉACTIONS** - Célébrité des réactions (500 réactions reçues)
 
-#### 🎙️ Temps Vocal
-- **PREMIER MOT** (1 minute) → 50 XP
-- **LOCUTEUR-RICE** (60 minutes) → 200 XP
-- **ORATEUR-RICE CONFIRMÉ-E** (300 minutes) → 600 XP
-- **MAÎTRE-ESSE DU MICRO** (1200 minutes) → 1500 XP
+#### 🎙️ Vocal
+- **PREMIER MOT** - Rejoignez un salon vocal (1 minute)
+- **LOCUTEUR-RICE** - Temps de qualité en vocal (60 minutes)
+- **ORATEUR-RICE CONFIRMÉ-E** - Maîtrise vocale (300 minutes)
+- **MAÎTRE-ESSE DU MICRO** - Légende vocale (1200 minutes)
 
-#### 🎭 Événements
-- **CURIEUX-SE** (1 participation) → 100 XP
-- **HABITUÉ-E DES EVENTS** (5 participations) → 300 XP
-- **ACCRO AUX EVENTS** (20 participations) → 800 XP
-- **MAÎTRE DES ÉVÉNEMENTS** (50 participations) → 2000 XP
+#### 📹 Caméra & Stream
+- **PREMIERS PAS VIDÉO** - Activez votre caméra
+- **CAMERAMAN-WOMAN** - Sessions caméra régulières
+- **STAR DU LIVE** - Vedette des vidéos
+- **PREMIER STREAM** - Premier partage d'écran
+- **MAÎTRE DU STREAM** - Légende du streaming
 
-### 📈 Système d'Expérience
+#### 🎉 Événements & Social
+- **CURIEUX-SE** - Premier événement
+- **HABITUÉ-E DES EVENTS** - Participation régulière
+- **ENCOURAGEUR-SE** - Félicitez les autres
+- **APPRÉCIÉ-E** - Recevez des félicitations
 
-#### Gains d'XP par Action
-- **Message envoyé** → 5 XP
-- **Réaction donnée** → 2 XP  
-- **Réaction reçue** → 3 XP
-- **Minute vocale** → 1 XP
-- **Félicitation envoyée** → 10 XP
-- **Félicitation reçue** → 15 XP
-- **Boost serveur** → 500 XP
-- **Exploit débloqué** → 100 XP
+#### 🚀 Boosts
+- **BIENFAITEUR-RICE** - Boostez le serveur
+- **MÉCÈNE** - Grand supporteur
 
-#### Calcul des Niveaux
-```
-Niveau 1: 0 XP
-Niveau 2: 1,000 XP
-Niveau 3: 2,000 XP
-...
-Niveau N: (N-1) × 1,000 XP
-```
+### 🎨 Raretés des exploits
 
----
+| Rareté | Couleur | Emoji | Description |
+|--------|---------|-------|-------------|
+| **Commun** | Blanc | ⚪ | Exploits de base accessibles à tous |
+| **Peu commun** | Vert | 🟢 | Activité régulière requise |
+| **Rare** | Bleu | 🔵 | Engagement important nécessaire |
+| **Épique** | Violet | 🟣 | Accomplissements remarquables |
+| **Légendaire** | Orange | 🟠 | Statut de légende communautaire |
 
-## 🎨 Galerie d'Images
+## 🎨 Personnalisation
 
-### 📊 Profil Utilisateur
-- **Avatar avec effet glow** et bordure dorée
-- **Barres de progression animées** pour chaque statistique  
-- **Graphiques visuels** des performances
-- **Derniers exploits** avec badges de rareté
-
-### 🏆 Cartes d'Exploits
-- **Arrière-plans thématiques** selon la rareté
-- **Effets de particules** dynamiques
-- **Texte 3D** avec ombres
-- **Timestamps décoratifs**
-
-### 🥇 Classements
-- **Podium pour le top 3** avec médailles
-- **Liste détaillée** des autres positions
-- **Statistiques visuelles** par catégorie
-
----
-
-## 🗂️ Structure du Projet
-
-```
-questbot-advanced/
-├── 📁 assets/                 # Ressources visuelles
-│   ├── 📁 fonts/             # Polices personnalisées
-│   └── 📁 images/            # Images de fond, logos
-├── 📁 backups/               # Sauvegardes automatiques
-├── 📁 commands/              # Commandes organisées
-│   ├── 📁 admin/             # Commandes administrateur
-│   ├── 📁 user/              # Commandes utilisateur
-│   └── 📁 utility/           # Commandes utilitaires
-├── 📁 events/                # Gestionnaires d'événements
-├── 📁 scripts/               # Scripts utilitaires
-├── 📁 temp/                  # Fichiers temporaires
-├── 📁 utils/                 # Utilitaires (Canvas, etc.)
-├── 📄 config.js              # Configuration système
-├── 📄 database.json          # Base de données JSON
-├── 📄 example.env            # Template variables d'environnement
-├── 📄 index.js               # Point d'entrée principal
-├── 📄 package.json           # Dépendances et scripts
-└── 📄 README.md              # Documentation
+### 🎨 Modifier les couleurs
+Dans `config.js`, section `colors` :
+```javascript
+colors: {
+    primary: '#FFD700',      // Or principal
+    secondary: '#FFA500',    // Orange secondaire
+    success: '#00FF7F',      // Vert succès
+    error: '#FF4444',        // Rouge erreur
+    // ...
+}
 ```
 
----
-
-## 🔧 Administration
-
-### 💾 Sauvegarde Automatique
-- **Intervalles configurables** (par défaut : 1 heure)
-- **Rotation automatique** des sauvegardes
-- **Compression** pour économiser l'espace
-- **Sauvegarde manuelle** via commande admin
-
-### 📊 Monitoring
-- **Statistiques en temps réel** du bot
-- **Logs détaillés** avec niveaux configurables
-- **Alertes d'erreur** vers canal admin
-- **Performance tracking** (RAM, CPU, latence)
-
-### 🔄 Maintenance
-- **Rechargement à chaud** des commandes
-- **Nettoyage automatique** des fichiers temporaires
-- **Optimisation de la base de données**
-- **Scripts de maintenance** inclus
-
----
-
-## 🚨 Dépannage
-
-### ❌ Problèmes Courants
-
-#### Le bot ne répond pas aux commandes
-```bash
-# Vérifier les permissions
-# Vérifier le préfixe dans .env
-# Consulter les logs pour les erreurs
+### 🏆 Ajouter des exploits
+Dans `config.js`, section `achievements` :
+```javascript
+messages: [
+    {
+        id: 'nouveau_exploit',
+        name: 'NOUVEAU EXPLOIT',
+        description: 'Description de l\'exploit',
+        requirement: 100,
+        xp: 500,
+        emoji: '🆕',
+        rarity: 'rare'
+    }
+]
 ```
 
-#### Canvas ne génère pas d'images
-```bash
-# Installer les dépendances système
-sudo apt-get install build-essential libcairo2-dev libpango1.0-dev
+### 🔤 Polices personnalisées
+1. Ajoutez vos fichiers `.ttf` ou `.otf` dans `assets/fonts/`
+2. Redémarrez le bot
+3. Les polices seront chargées automatiquement
 
-# Vérifier la version de Node.js
-node --version  # Doit être >= 18.0.0
+### 🎯 Mots-clés de félicitations
+Dans `config.js`, section `congratulationKeywords` :
+```javascript
+congratulationKeywords: [
+    'bravo', 'félicitations', 'gg', 'bien joué',
+    'respect', 'génial', 'parfait', 'excellent'
+    // Ajoutez vos propres mots-clés
+]
 ```
 
-#### Les rôles ne sont pas attribués
-```bash
-# Vérifier que le bot a la permission "Gérer les rôles"
-# S'assurer que le rôle du bot est plus haut que les rôles à attribuer
-# Vérifier les IDs des rôles dans .env
-```
-
-### 📝 Logs & Debug
+## 🔧 Scripts NPM
 
 ```bash
-# Activer le mode debug
+# Démarrer le bot
+npm start
+
+# Mode développement (nodemon)
+npm run dev
+
+# Vérification du code
+npm run lint
+
+# Formatage du code
+npm run format
+
+# Tests (si configurés)
+npm test
+```
+
+## 📊 Monitoring et Analytics
+
+### 🔍 Logs automatiques
+- Connexion/déconnexion du bot
+- Exploits débloqués en temps réel
+- Erreurs de commandes avec stack trace
+- Statistiques d'utilisation
+
+### 💾 Sauvegardes automatiques
+- **Fréquence** : Toutes les 10 minutes
+- **Rétention** : 10 sauvegardes maximum
+- **Format** : JSON avec horodatage
+- **Localisation** : Dossier `backups/`
+
+### 📈 Analytics serveur
+- Statistiques globales des utilisateurs
+- Tendances d'activité
+- Top performers par catégorie
+- Taux de complétion des exploits
+
+## 🐛 Dépannage
+
+### ❌ Erreurs communes
+
+**Canvas ne fonctionne pas**
+```bash
+# Réinstaller Canvas
+npm uninstall canvas
+npm install canvas
+
+# Vérifier les dépendances système
+# Voir section "Prérequis" ci-dessus
+```
+
+**Token invalide**
+```
+❌ An invalid token was provided
+```
+- Vérifiez votre `DISCORD_TOKEN` dans le fichier `.env`
+- Régénérez le token sur Discord Developer Portal
+
+**Permissions insuffisantes**
+```
+❌ Missing Permissions
+```
+- Vérifiez les permissions du bot sur votre serveur
+- Assurez-vous que les IDs dans `.env` sont corrects
+
+**Base de données corrompue**
+```bash
+# Restaurer depuis une sauvegarde
+cp backups/database_[timestamp].json database.json
+```
+
+### 🔍 Mode Debug
+Activez le debug dans `.env` :
+```env
 DEBUG_MODE=true
-
-# Changer le niveau de logs
-LOG_LEVEL=debug
-
-# Voir les logs en temps réel
-tail -f logs/questbot.log
 ```
 
----
+Logs détaillés et stack traces complets seront affichés.
 
-## 🤝 Support
+### 📝 Support et logs
+- **Logs console** : Tous les événements importants
+- **Canal admin** : Erreurs automatiquement loggées (si configuré)
+- **Fichiers de sauvegarde** : Historique complet des données
 
-### 💬 Canaux d'Aide
-- **GitHub Issues** : [Signaler un bug](https://github.com/VOTRE_USERNAME/questbot-advanced/issues)
-- **Discord Support** : [Rejoindre le serveur](https://discord.gg/VOTRE_SERVEUR)
-- **Documentation** : [Wiki complet](https://github.com/VOTRE_USERNAME/questbot-advanced/wiki)
+## 🚀 Déploiement
 
-### 🐛 Signaler un Bug
-1. Vérifiez que le bug n'a pas déjà été signalé
-2. Fournissez les logs d'erreur complets
-3. Décrivez les étapes pour reproduire
-4. Mentionnez votre version de Node.js et OS
+### 🐳 Docker (optionnel)
+```dockerfile
+FROM node:18-alpine
 
-### 💡 Demander une Fonctionnalité
-1. Ouvrez une issue avec le tag `enhancement`
-2. Décrivez clairement la fonctionnalité souhaitée
-3. Expliquez pourquoi elle serait utile
-4. Proposez une implémentation si possible
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
 
----
+COPY . .
+EXPOSE 3000
+
+CMD ["npm", "start"]
+```
+
+### ☁️ Hébergement recommandé
+- **VPS** : 1GB RAM minimum, 2GB recommandé
+- **Heroku** : Dyno Standard avec Canvas buildpack
+- **Railway** : Déploiement automatique via Git
+- **DigitalOcean** : Droplet Ubuntu 22.04
+
+### 🔒 Variables d'environnement production
+```env
+NODE_ENV=production
+DEBUG_MODE=false
+# Autres variables selon votre configuration
+```
 
 ## 🤝 Contribution
 
-### 🔧 Développement Local
+1. **Fork** le projet
+2. Créez une branche feature (`git checkout -b feature/AmazingFeature`)
+3. **Commit** vos changements (`git commit -m 'Add AmazingFeature'`)
+4. **Push** vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une **Pull Request**
 
-```bash
-# Fork le projet
-git clone https://github.com/VOTRE_USERNAME/questbot-advanced.git
-cd questbot-advanced
+### 📏 Standards de code
+- **ESLint** pour la cohérence du code
+- **Prettier** pour le formatage
+- **JSDoc** pour la documentation des fonctions
+- **Conventional Commits** pour les messages de commit
 
-# Créer une branche
-git checkout -b feature/nouvelle-fonctionnalite
-
-# Installer en mode développement
-npm install
-npm run dev
-
-# Tester vos modifications
-npm test
-
-# Commit et push
-git commit -m "Ajouter nouvelle fonctionnalité"
-git push origin feature/nouvelle-fonctionnalite
-```
-
-### 📋 Guidelines
-- **Code propre** avec commentaires explicatifs
-- **Tests unitaires** pour les nouvelles fonctionnalités
-- **Documentation** mise à jour
-- **Respect des conventions** de nommage
-
----
-
-## 📄 Licence
+## 📜 Licence
 
 Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
-```
-MIT License
-
-Copyright (c) 2024 QuestBot Advanced
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software...
-```
-
----
-
 ## 🙏 Remerciements
 
-- **Discord.js** - Bibliothèque Discord pour Node.js
-- **node-canvas** - Génération d'images sur serveur
-- **Communauté Discord** - Tests et retours
-- **Contributeurs** - Améliorations et corrections
+- [**Discord.js**](https://discord.js.org/) - Bibliothèque Discord robuste
+- [**Canvas**](https://www.npmjs.com/package/canvas) - Génération d'images dynamiques
+- [**Node.js**](https://nodejs.org/) - Environnement d'exécution
+- **Communauté Discord** - Tests et retours utilisateurs
+
+## 📞 Support
+
+- **Issues GitHub** : [Signaler un bug](https://github.com/Cut0x/quest-discord-bot/issues)
+- **Discussions** : [Forum communautaire](https://github.com/Cut0x/quest-discord-bot/discussions)
+- **Discord Support** : [Serveur de support](https://discord.gg/aTX6FP37pK)
+- **Documentation** : [Wiki complet](https://github.com/Cut0x/quest-discord-bot/wiki)
+
+## 🔮 Roadmap
+
+### 🎯 Prochaines fonctionnalités
+- [ ] **Slash Commands** - Migration vers les commandes modernes
+- [ ] **Dashboard Web** - Interface web pour la configuration
+- [ ] **API REST** - Endpoints pour intégrations tierces
+- [ ] **Système de quêtes** - Défis temporaires et événements
+- [ ] **Récompenses personnalisées** - Rôles automatiques et privilèges
+- [ ] **Multi-serveurs** - Synchronisation inter-serveurs
+- [ ] **Intelligence artificielle** - Détection automatique d'activités
+
+### 🔧 Améliorations techniques
+- [ ] **Base de données** - Migration vers PostgreSQL/MongoDB
+- [ ] **Cache Redis** - Performance améliorée
+- [ ] **Monitoring** - Prometheus + Grafana
+- [ ] **Tests automatisés** - Jest + Coverage
+- [ ] **CI/CD** - GitHub Actions
+- [ ] **Docker Compose** - Déploiement simplifié
 
 ---
 
-## 📈 Statistiques du Projet
+**QuestBot Advanced v2.0** - Transformez votre serveur Discord en une aventure interactive ! 🎮
 
-![GitHub Stars](https://img.shields.io/github/stars/VOTRE_USERNAME/questbot-advanced?style=social)
-![GitHub Forks](https://img.shields.io/github/forks/VOTRE_USERNAME/questbot-advanced?style=social)
-![GitHub Issues](https://img.shields.io/github/issues/VOTRE_USERNAME/questbot-advanced)
-![GitHub Pull Requests](https://img.shields.io/github/issues-pr/VOTRE_USERNAME/questbot-advanced)
-
----
-
-<div align="center">
-
-**⭐ N'oubliez pas de mettre une étoile si ce projet vous plaît ! ⭐**
-
-[🔝 Retour en haut](#-questbot-advanced---système-dexploits-discord)
-
-*Créé avec ❤️ pour la communauté Discord*
-
-</div>
+*Développé avec ❤️ par la communauté Discord*
