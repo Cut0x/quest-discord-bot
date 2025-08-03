@@ -1,6 +1,4 @@
-
-
-// events/interactionCreate.js
+// events/interactionCreate.js - Gestion moderne des interactions
 module.exports = {
     name: 'interactionCreate',
     async execute(interaction, bot) {
@@ -17,16 +15,16 @@ module.exports = {
                 await this.handleSelectMenuInteraction(interaction, bot);
             }
             
-            // =================== SLASH COMMANDS (si implémentées) ===================
+            // =================== SLASH COMMANDS ===================
             else if (interaction.isChatInputCommand()) {
                 await this.handleSlashCommand(interaction, bot);
             }
             
         } catch (error) {
-            console.error('Erreur lors du traitement de l\'interaction:', error);
+            console.error('Error processing interaction:', error);
             
             const errorMessage = {
-                content: '❌ Une erreur est survenue lors du traitement de votre interaction.',
+                content: '❌ An error occurred while processing your interaction.',
                 ephemeral: true
             };
             
@@ -41,42 +39,14 @@ module.exports = {
     async handleButtonInteraction(interaction, bot) {
         const { customId } = interaction;
         
-        // Navigation dans les achievements
-        if (customId.startsWith('achievements_')) {
-            const category = customId.replace('achievements_', '');
-            
-            if (category === 'overview') {
-                // Afficher la vue d'ensemble des achievements
-                return this.showAchievementsOverview(interaction, bot);
-            }
-            
-            // Afficher une catégorie spécifique
-            const achievementsCommand = bot.commands.get('achievements');
-            if (achievementsCommand) {
-                // Simuler l'exécution avec la catégorie
-                const fakeMessage = {
-                    author: interaction.user,
-                    guild: interaction.guild,
-                    reply: async (content) => interaction.update(content)
-                };
-                
-                await achievementsCommand.execute(fakeMessage, [category], bot);
-            }
-        }
-        
-        // Boutons du panel admin
-        else if (customId.startsWith('admin_')) {
-            const action = customId.replace('admin_', '');
-            await this.handleAdminAction(interaction, action, bot);
-        }
-        
-        // Actions rapides depuis l'aide
-        else if (customId === 'quick_stats') {
+        // Quick stats button
+        if (customId === 'quick_stats') {
             const statsCommand = bot.commands.get('stats');
             if (statsCommand) {
                 const fakeMessage = {
                     author: interaction.user,
                     guild: interaction.guild,
+                    member: interaction.member,
                     mentions: { users: { first: () => null } },
                     reply: async (content) => interaction.reply({ ...content, ephemeral: true })
                 };
@@ -85,23 +55,102 @@ module.exports = {
             }
         }
         
-        else if (customId === 'quick_achievements') {
+        // Quick leaderboard button
+        else if (customId === 'quick_leaderboard') {
+            const leaderboardCommand = bot.commands.get('leaderboard');
+            if (leaderboardCommand) {
+                const fakeMessage = {
+                    author: interaction.user,
+                    guild: interaction.guild,
+                    member: interaction.member,
+                    reply: async (content) => interaction.reply({ ...content, ephemeral: true })
+                };
+                
+                await leaderboardCommand.execute(fakeMessage, [], bot);
+            }
+        }
+        
+        // Canvas demo button
+        else if (customId === 'canvas_demo') {
+            try {
+                await interaction.deferReply({ ephemeral: true });
+                
+                // Generate a demo profile card
+                const demoCard = await bot.createModernProfileCard(
+                    interaction.user.id,
+                    interaction.guild.id,
+                    interaction.user,
+                    interaction.member
+                );
+                
+                const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
+                const attachment = new AttachmentBuilder(demoCard, { name: 'demo.png' });
+                
+                const embed = new EmbedBuilder()
+                    .setTitle('🎨 Canvas Demo - Modern Profile')
+                    .setDescription('Here\'s a demonstration of our modern Canvas-generated profile cards with glassmorphism effects and professional design.')
+                    .setImage('attachment://demo.png')
+                    .setColor('#667eea')
+                    .addFields([
+                        {
+                            name: '✨ Features',
+                            value: '• Glassmorphism effects\n• Modern gradients\n• Professional typography\n• Visual statistics',
+                            inline: true
+                        },
+                        {
+                            name: '🎯 Technology',
+                            value: '• HTML5 Canvas\n• Node.js Canvas\n• Custom design system\n• Optimized rendering',
+                            inline: true
+                        }
+                    ])
+                    .setTimestamp();
+                
+                await interaction.editReply({
+                    embeds: [embed],
+                    files: [attachment]
+                });
+                
+            } catch (error) {
+                console.error('Canvas demo error:', error);
+                await interaction.editReply({
+                    content: '❌ Error generating canvas demo. Canvas system might not be properly configured.',
+                    ephemeral: true
+                });
+            }
+        }
+        
+        // Achievement navigation buttons
+        else if (customId.startsWith('achievements_')) {
+            const category = customId.replace('achievements_', '');
+            
+            if (category === 'overview') {
+                return this.showAchievementsOverview(interaction, bot);
+            }
+            
             const achievementsCommand = bot.commands.get('achievements');
             if (achievementsCommand) {
                 const fakeMessage = {
                     author: interaction.user,
                     guild: interaction.guild,
-                    reply: async (content) => interaction.reply({ ...content, ephemeral: true })
+                    member: interaction.member,
+                    reply: async (content) => interaction.update(content)
                 };
                 
-                await achievementsCommand.execute(fakeMessage, [], bot);
+                await achievementsCommand.execute(fakeMessage, [category], bot);
             }
+        }
+        
+        // Admin panel buttons
+        else if (customId.startsWith('admin_')) {
+            const action = customId.replace('admin_', '');
+            await this.handleAdminAction(interaction, action, bot);
         }
     },
 
     async handleSelectMenuInteraction(interaction, bot) {
         const { customId, values } = interaction;
         
+        // Leaderboard category selection
         if (customId === 'leaderboard_category') {
             const category = values[0];
             const leaderboardCommand = bot.commands.get('leaderboard');
@@ -110,6 +159,7 @@ module.exports = {
                 const fakeMessage = {
                     author: interaction.user,
                     guild: interaction.guild,
+                    member: interaction.member,
                     reply: async (content) => interaction.update(content)
                 };
                 
@@ -117,16 +167,34 @@ module.exports = {
             }
         }
         
+        // Help category selection
         else if (customId === 'help_category') {
             const category = values[0];
             await this.showCommandsByCategory(interaction, category, bot);
         }
+        
+        // Achievement category selection
+        else if (customId === 'achievement_category') {
+            const category = values[0];
+            const achievementsCommand = bot.commands.get('achievements');
+            
+            if (achievementsCommand) {
+                const fakeMessage = {
+                    author: interaction.user,
+                    guild: interaction.guild,
+                    member: interaction.member,
+                    reply: async (content) => interaction.update(content)
+                };
+                
+                await achievementsCommand.execute(fakeMessage, [category], bot);
+            }
+        }
     },
 
     async handleSlashCommand(interaction, bot) {
-        // À implémenter si vous voulez supporter les slash commands
+        // Future slash command support
         await interaction.reply({ 
-            content: '⚠️ Les slash commands ne sont pas encore implémentées. Utilisez les commandes avec préfixe `!`', 
+            content: '⚠️ Slash commands are not yet implemented. Please use prefix commands with `!`', 
             ephemeral: true 
         });
     },
@@ -138,20 +206,20 @@ module.exports = {
         
         if (commands.size === 0) {
             return interaction.update({
-                content: `❌ Aucune commande trouvée dans la catégorie \`${category}\`.`,
+                content: `❌ No commands found in category \`${category}\`.`,
                 ephemeral: true
             });
         }
         
         const embed = new EmbedBuilder()
-            .setTitle(`📚 Commandes - ${category.charAt(0).toUpperCase() + category.slice(1)}`)
-            .setColor('#4ECDC4')
+            .setTitle(`📚 Commands - ${category.charAt(0).toUpperCase() + category.slice(1)}`)
+            .setColor('#667eea')
             .setTimestamp();
         
         let description = '';
         commands.forEach(command => {
             description += `**${process.env.PREFIX || '!'}${command.data.name}** ${command.data.usage || ''}\n`;
-            description += `${command.data.description || 'Aucune description'}\n\n`;
+            description += `${command.data.description || 'No description'}\n\n`;
         });
         
         embed.setDescription(description);
@@ -160,11 +228,11 @@ module.exports = {
     },
 
     async handleAdminAction(interaction, action, bot) {
-        // Vérifier les permissions admin
+        // Check admin permissions
         const adminIds = process.env.ADMIN_IDS?.split(',') || [];
         if (!adminIds.includes(interaction.user.id)) {
             return interaction.reply({
-                content: '❌ Vous n\'avez pas la permission d\'utiliser cette fonction.',
+                content: '❌ You don\'t have permission to use this function.',
                 ephemeral: true
             });
         }
@@ -180,5 +248,40 @@ module.exports = {
             
             await adminCommand.execute(fakeMessage, [action], bot);
         }
+    },
+
+    async showAchievementsOverview(interaction, bot) {
+        const { EmbedBuilder } = require('discord.js');
+        
+        const userData = bot.getUserData(interaction.user.id, interaction.guild.id);
+        const totalAchievements = bot.config?.achievements ? 
+            Object.values(bot.config.achievements).flat().length : 50;
+        
+        const completionRate = Math.round((userData.achievements.length / totalAchievements) * 100);
+        
+        const embed = new EmbedBuilder()
+            .setTitle('🏆 Achievement Overview')
+            .setDescription(`Your achievement progress on **${interaction.guild.name}**`)
+            .setColor('#667eea')
+            .addFields([
+                {
+                    name: '📊 Progress',
+                    value: `**${userData.achievements.length}** / **${totalAchievements}** unlocked\n**${completionRate}%** completion rate`,
+                    inline: true
+                },
+                {
+                    name: '🎯 Recent Unlocks',
+                    value: userData.achievements.length > 0 ? 
+                        userData.achievements.slice(-3).map(id => {
+                            const [category, achievementId] = id.split('_');
+                            return `• ${category}: ${achievementId}`;
+                        }).join('\n') : 
+                        '*No achievements yet*',
+                    inline: true
+                }
+            ])
+            .setTimestamp();
+        
+        await interaction.update({ embeds: [embed] });
     }
 };

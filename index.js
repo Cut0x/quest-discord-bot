@@ -1,11 +1,11 @@
-// index.js - QuestBot Advanced (Version corrigée)
+// index.js - QuestBot Advanced Moderne (Version refactorisée)
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
 const config = require('./config.js');
-const BotFunctions = require('./utils/functions.js');
+const ModernBotFunctions = require('./utils/functions.js');
 
 class QuestBot {
     constructor() {
@@ -26,14 +26,14 @@ class QuestBot {
         this.cooldowns = new Collection();
         this.database = this.loadDatabase();
         this.voiceTracking = new Map();
-        this.functions = new BotFunctions(config);
+        this.functions = new ModernBotFunctions(config);
         
-        // Statistiques du bot
         this.stats = {
             messagesProcessed: 0,
             achievementsUnlocked: 0,
             commandsExecuted: 0,
-            uptime: Date.now()
+            uptime: Date.now(),
+            canvasImagesGenerated: 0
         };
 
         this.init();
@@ -41,46 +41,32 @@ class QuestBot {
 
     async init() {
         try {
-            // Vérifier les variables d'environnement requises
-            this.checkRequiredEnvVars();
-            
-            // Créer les dossiers nécessaires
+            this.validateEnvironment();
             this.createDirectories();
             
-            // Charger les commandes et événements
             await this.loadCommands();
             await this.loadEvents();
             
-            // Planifier le nettoyage du cache
-            setInterval(() => {
-                this.functions.cleanCache();
-            }, 300000); // 5 minutes
+            this.setupIntervals();
             
-            // Planifier les sauvegardes automatiques
-            setInterval(() => {
-                this.saveDatabase();
-            }, 600000); // 10 minutes
-            
-            // Démarrer le bot
             await this.client.login(process.env.DISCORD_TOKEN);
             
-            console.log('🚀 QuestBot Advanced démarré avec succès !');
+            console.log('🚀 QuestBot Advanced Modern started successfully!');
         } catch (error) {
-            console.error('❌ Erreur lors du démarrage:', error);
+            console.error('❌ Startup error:', error);
             process.exit(1);
         }
     }
 
-    checkRequiredEnvVars() {
+    validateEnvironment() {
         const required = ['DISCORD_TOKEN'];
         const missing = required.filter(env => !process.env[env]);
         
         if (missing.length > 0) {
-            console.error('❌ Variables d\'environnement manquantes:', missing.join(', '));
-            throw new Error('Configuration incomplète');
+            console.error('❌ Missing environment variables:', missing.join(', '));
+            throw new Error('Incomplete configuration');
         }
         
-        // Avertissements pour les variables optionnelles mais recommandées
         const recommended = [
             'NOTIFICATION_CHANNEL_ID',
             'ADMIN_IDS',
@@ -89,16 +75,16 @@ class QuestBot {
         
         const missingRecommended = recommended.filter(env => !process.env[env]);
         if (missingRecommended.length > 0) {
-            console.warn('⚠️ Variables d\'environnement recommandées manquantes:', missingRecommended.join(', '));
+            console.warn('⚠️ Missing recommended environment variables:', missingRecommended.join(', '));
         }
     }
 
     createDirectories() {
-        const dirs = ['commands', 'events', 'assets', 'backups', 'temp', 'utils'];
+        const dirs = ['commands', 'events', 'assets', 'backups', 'temp', 'utils', 'assets/fonts'];
         dirs.forEach(dir => {
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
-                console.log(`📁 Dossier créé: ${dir}/`);
+                console.log(`📁 Directory created: ${dir}/`);
             }
         });
     }
@@ -107,10 +93,9 @@ class QuestBot {
         try {
             if (fs.existsSync('./database.json')) {
                 const data = JSON.parse(fs.readFileSync('./database.json', 'utf8'));
-                console.log('📊 Base de données chargée');
+                console.log('📊 Database loaded');
                 
-                // Valider et corriger la structure si nécessaire
-                if (!data.version) data.version = '2.0.0';
+                if (!data.version) data.version = '3.0.0';
                 if (!data.users) data.users = {};
                 if (!data.guilds) data.guilds = {};
                 if (!data.settings) data.settings = {};
@@ -118,18 +103,35 @@ class QuestBot {
                 return data;
             }
         } catch (error) {
-            console.error('❌ Erreur lors du chargement de la base de données:', error);
+            console.error('❌ Database loading error:', error);
         }
         
-        console.log('📊 Création d\'une nouvelle base de données');
+        console.log('📊 Creating new database');
         return {
             users: {},
             guilds: {},
             settings: {},
-            version: '2.0.0',
+            version: '3.0.0',
             createdAt: new Date().toISOString(),
             lastBackup: null
         };
+    }
+
+    setupIntervals() {
+        // Cache cleanup every 5 minutes
+        setInterval(() => {
+            this.functions.cleanCache();
+        }, 300000);
+        
+        // Auto-save every 10 minutes
+        setInterval(() => {
+            this.saveDatabase();
+        }, 600000);
+        
+        // Stats update every hour
+        setInterval(() => {
+            this.updateStats();
+        }, 3600000);
     }
 
     saveDatabase() {
@@ -144,7 +146,7 @@ class QuestBot {
             const folderPath = path.join(commandsPath, folder);
             if (!fs.existsSync(folderPath)) {
                 fs.mkdirSync(folderPath, { recursive: true });
-                console.log(`📁 Dossier de commandes créé: ${folder}/`);
+                console.log(`📁 Command folder created: ${folder}/`);
                 continue;
             }
             
@@ -153,30 +155,29 @@ class QuestBot {
             for (const file of commandFiles) {
                 const filePath = path.join(folderPath, file);
                 try {
-                    // Supprimer le cache pour permettre le rechargement à chaud
                     delete require.cache[require.resolve(filePath)];
                     const command = require(filePath);
                     
                     if ('data' in command && 'execute' in command) {
                         this.commands.set(command.data.name, command);
-                        console.log(`✅ Commande chargée: ${command.data.name}`);
+                        console.log(`✅ Command loaded: ${command.data.name}`);
                     } else {
-                        console.log(`⚠️ Commande ignorée ${file}: structure invalide (manque 'data' ou 'execute')`);
+                        console.log(`⚠️ Command ignored ${file}: invalid structure`);
                     }
                 } catch (error) {
-                    console.error(`❌ Erreur lors du chargement de ${file}:`, error.message);
+                    console.error(`❌ Error loading ${file}:`, error.message);
                 }
             }
         }
         
-        console.log(`📚 ${this.commands.size} commande(s) chargée(s) au total`);
+        console.log(`📚 ${this.commands.size} command(s) loaded`);
     }
 
     async loadEvents() {
         const eventsPath = path.join(__dirname, 'events');
         if (!fs.existsSync(eventsPath)) {
             fs.mkdirSync(eventsPath, { recursive: true });
-            console.log('📁 Dossier events créé');
+            console.log('📁 Events folder created');
             return;
         }
 
@@ -185,12 +186,11 @@ class QuestBot {
         for (const file of eventFiles) {
             const filePath = path.join(eventsPath, file);
             try {
-                // Supprimer le cache pour permettre le rechargement à chaud
                 delete require.cache[require.resolve(filePath)];
                 const event = require(filePath);
                 
                 if (!event.name || !event.execute) {
-                    console.log(`⚠️ Événement ignoré ${file}: structure invalide`);
+                    console.log(`⚠️ Event ignored ${file}: invalid structure`);
                     continue;
                 }
                 
@@ -211,14 +211,14 @@ class QuestBot {
                         }
                     });
                 }
-                console.log(`🎯 Événement chargé: ${event.name}`);
+                console.log(`🎯 Event loaded: ${event.name}`);
             } catch (error) {
-                console.error(`❌ Erreur lors du chargement de l'événement ${file}:`, error.message);
+                console.error(`❌ Error loading event ${file}:`, error.message);
             }
         }
     }
 
-    // =================== MÉTHODES PRINCIPALES ===================
+    // =================== CORE METHODS ===================
 
     getUserData(userId, guildId) {
         const userData = this.functions.getUserData(this.database, userId, guildId);
@@ -243,25 +243,28 @@ class QuestBot {
     }
 
     async sendAchievementNotification(userId, guildId, achievements, guild) {
-        return this.functions.sendAchievementNotification(userId, guildId, achievements, guild);
+        return this.functions.sendModernAchievementNotification(userId, guildId, achievements, guild);
     }
 
-    // =================== MÉTHODES CANVAS ===================
+    // =================== MODERN CANVAS METHODS ===================
 
-    async createAchievementCard(user, achievement, category, leveledUp = false, newLevel = 1) {
-        return this.functions.createAchievementCard(user, achievement, category, leveledUp, newLevel);
-    }
-
-    async createProgressCard(userId, guildId, user) {
+    async createModernProfileCard(userId, guildId, user, member = null) {
         const userData = this.getUserData(userId, guildId);
-        return this.functions.createProgressCard(userId, guildId, user, userData);
+        this.stats.canvasImagesGenerated++;
+        return this.functions.createModernProfileCard(userId, guildId, user, userData, member);
     }
 
-    async createLeaderboard(guildId, category = 'messages', limit = 10) {
-        return this.functions.createLeaderboard(guildId, category, limit, this.database, this.client);
+    async createModernAchievementCard(user, achievement, category, leveledUp = false, newLevel = 1) {
+        this.stats.canvasImagesGenerated++;
+        return this.functions.createModernAchievementCard(user, achievement, category, leveledUp, newLevel);
     }
 
-    // =================== GESTION DES COOLDOWNS ===================
+    async createModernLeaderboard(guildId, category = 'messages', limit = 10) {
+        this.stats.canvasImagesGenerated++;
+        return this.functions.createModernLeaderboard(guildId, category, limit, this.database, this.client);
+    }
+
+    // =================== COOLDOWN MANAGEMENT ===================
 
     setCooldown(userId, commandName, duration) {
         if (!this.cooldowns.has(commandName)) {
@@ -284,7 +287,7 @@ class QuestBot {
         return timestamps.get(userId);
     }
 
-    // =================== UTILITAIRES ===================
+    // =================== UTILITIES ===================
 
     formatNumber(num) {
         return this.functions.formatNumber(num);
@@ -298,11 +301,15 @@ class QuestBot {
         return this.functions.getProgressPercentage(current, target);
     }
 
-    // =================== MÉTHODES DE DÉBOGAGE ET MAINTENANCE ===================
+    updateStats() {
+        const uptime = Date.now() - this.stats.uptime;
+        console.log(`📊 Stats Update - Uptime: ${Math.floor(uptime / 1000 / 60)}m, Commands: ${this.stats.commandsExecuted}, Canvas: ${this.stats.canvasImagesGenerated}`);
+    }
+
+    // =================== DEBUGGING & MAINTENANCE ===================
 
     async reloadCommand(commandName) {
         try {
-            // Chercher le fichier de commande
             const commandFolders = ['user', 'admin', 'utility'];
             let foundPath = null;
             
@@ -317,19 +324,18 @@ class QuestBot {
             }
             
             if (!foundPath) {
-                throw new Error(`Commande ${commandName} non trouvée`);
+                throw new Error(`Command ${commandName} not found`);
             }
             
-            // Supprimer le cache et recharger
             delete require.cache[require.resolve(foundPath)];
             const command = require(foundPath);
             
             if ('data' in command && 'execute' in command) {
                 this.commands.set(command.data.name, command);
-                console.log(`🔄 Commande rechargée: ${command.data.name}`);
+                console.log(`🔄 Command reloaded: ${command.data.name}`);
                 return true;
             } else {
-                throw new Error('Structure de commande invalide');
+                throw new Error('Invalid command structure');
             }
         } catch (error) {
             this.functions.logError('Reload Command', error, { command: commandName });
@@ -353,30 +359,25 @@ class QuestBot {
         };
     }
 
-    // =================== NETTOYAGE ET FERMETURE ===================
+    // =================== CLEANUP & SHUTDOWN ===================
 
     async shutdown() {
-        console.log('🔄 Arrêt du bot en cours...');
+        console.log('🔄 Bot shutdown in progress...');
         
-        // Sauvegarder la base de données
         this.saveDatabase();
-        
-        // Nettoyer les ressources
         this.functions.cleanCache();
         
-        // Fermer la connexion Discord
         await this.client.destroy();
         
-        console.log('✅ Bot arrêté proprement');
+        console.log('✅ Bot shutdown complete');
         process.exit(0);
     }
 }
 
-// =================== GESTION DES ERREURS GLOBALES ===================
+// =================== GLOBAL ERROR HANDLING ===================
 
 process.on('unhandledRejection', (error, promise) => {
     console.error('❌ Unhandled promise rejection:', error);
-    console.error('Promise:', promise);
 });
 
 process.on('uncaughtException', (error) => {
@@ -384,9 +385,8 @@ process.on('uncaughtException', (error) => {
     process.exit(1);
 });
 
-// Gestion propre de l'arrêt
 process.on('SIGINT', async () => {
-    console.log('\n🔄 Signal SIGINT reçu, arrêt du bot...');
+    console.log('\n🔄 SIGINT signal received, shutting down...');
     if (global.bot) {
         await global.bot.shutdown();
     } else {
@@ -395,7 +395,7 @@ process.on('SIGINT', async () => {
 });
 
 process.on('SIGTERM', async () => {
-    console.log('\n🔄 Signal SIGTERM reçu, arrêt du bot...');
+    console.log('\n🔄 SIGTERM signal received, shutting down...');
     if (global.bot) {
         await global.bot.shutdown();
     } else {
@@ -403,7 +403,7 @@ process.on('SIGTERM', async () => {
     }
 });
 
-// =================== LANCEMENT DU BOT ===================
+// =================== BOT STARTUP ===================
 
 const bot = new QuestBot();
 global.bot = bot;

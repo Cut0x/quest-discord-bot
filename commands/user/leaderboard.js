@@ -1,12 +1,12 @@
-// commands/user/leaderboard.js
+// commands/user/leaderboard.js - Classement moderne
 const { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 
 module.exports = {
     data: {
         name: 'leaderboard',
-        description: 'Affiche le classement des membres',
-        aliases: ['top', 'classement', 'ranking', 'lb'],
-        usage: '[catégorie] [limite]',
+        description: 'Display member rankings',
+        aliases: ['top', 'ranking', 'lb'],
+        usage: '[category] [limit]',
         category: 'user',
         cooldown: 30000
     },
@@ -18,51 +18,48 @@ module.exports = {
         
         if (!validCategories.includes(category)) {
             const availableCategories = validCategories.map(cat => `\`${cat}\``).join(', ');
-            return message.reply(`❌ Catégorie invalide. Catégories disponibles: ${availableCategories}`);
+            return message.reply(`❌ Invalid category. Available categories: ${availableCategories}`);
         }
         
         try {
-            // Récupérer et trier les utilisateurs
             const users = this.getUsersData(bot.database.users, message.guild.id, category);
             
             if (users.length === 0) {
                 const embed = bot.functions.createInfoEmbed(
-                    'Aucune donnée',
-                    'Aucun utilisateur n\'a de données pour cette catégorie.'
+                    'No data',
+                    'No users have data for this category.'
                 );
                 return message.reply({ embeds: [embed] });
             }
 
             const topUsers = users.slice(0, limit);
-            
-            // Trouver la position de l'utilisateur actuel
             const userPosition = users.findIndex(u => u.userId === message.author.id) + 1;
             const userStats = users.find(u => u.userId === message.author.id);
             
-            // Créer l'image du leaderboard avec Canvas
+            // Create modern leaderboard image
             let attachment = null;
             try {
-                const leaderboardImage = await bot.createLeaderboard(message.guild.id, category, limit);
+                const leaderboardImage = await bot.createModernLeaderboard(message.guild.id, category, limit);
                 attachment = new AttachmentBuilder(leaderboardImage, { name: 'leaderboard.png' });
             } catch (canvasError) {
-                console.warn('⚠️ Erreur Canvas pour le leaderboard:', canvasError.message);
+                console.warn('⚠️ Canvas error for leaderboard:', canvasError.message);
             }
 
             const embed = new EmbedBuilder()
-                .setTitle(`🏆 Classement - ${this.getCategoryDisplayName(category)}`)
-                .setDescription(`Top ${limit} des membres les plus actifs sur **${message.guild.name}**`)
-                .setColor('#FFD700')
+                .setTitle(`🏆 Leaderboard - ${this.getCategoryDisplayName(category)}`)
+                .setDescription(`Top ${limit} most active members on **${message.guild.name}**\n\nModern design with visual statistics and progress tracking.`)
+                .setColor('#667eea')
                 .setFooter({ 
                     text: userPosition > 0 ? 
-                        `Votre position: #${userPosition} avec ${userStats?.value || 0} ${this.getCategoryUnit(category)}` : 
-                        'Vous n\'apparaissez pas encore dans ce classement'
+                        `Your position: #${userPosition} with ${userStats?.value || 0} ${this.getCategoryUnit(category)}` : 
+                        'You don\'t appear in this leaderboard yet'
                 })
                 .setTimestamp();
 
             if (attachment) {
                 embed.setImage('attachment://leaderboard.png');
             } else {
-                // Fallback textuel si Canvas échoue
+                // Text fallback
                 let leaderboardText = '';
                 for (let i = 0; i < Math.min(topUsers.length, 10); i++) {
                     const user = topUsers[i];
@@ -72,67 +69,60 @@ module.exports = {
                         const discordUser = await bot.client.users.fetch(user.userId);
                         leaderboardText += `${medal} ${discordUser.displayName} - ${bot.formatNumber(user.value)} ${this.getCategoryUnit(category)}\n`;
                     } catch {
-                        leaderboardText += `${medal} Utilisateur inconnu - ${bot.formatNumber(user.value)} ${this.getCategoryUnit(category)}\n`;
+                        leaderboardText += `${medal} Unknown User - ${bot.formatNumber(user.value)} ${this.getCategoryUnit(category)}\n`;
                     }
                 }
                 embed.setDescription(embed.data.description + '\n\n' + leaderboardText);
             }
             
-            // Menu de sélection pour changer de catégorie
+            // Category selection menu
             const selectMenu = new ActionRowBuilder()
                 .addComponents(
                     new StringSelectMenuBuilder()
                         .setCustomId('leaderboard_category')
-                        .setPlaceholder('Choisir une catégorie')
+                        .setPlaceholder('Choose a category')
                         .addOptions([
                             {
-                                label: 'Niveau',
-                                description: 'Classement par niveau',
+                                label: 'Level',
+                                description: 'Ranking by level',
                                 value: 'level',
                                 emoji: '🎖️',
                                 default: category === 'level'
                             },
                             {
-                                label: 'Expérience',
-                                description: 'Classement par XP total',
+                                label: 'Experience',
+                                description: 'Ranking by total XP',
                                 value: 'experience',
                                 emoji: '⭐',
                                 default: category === 'experience'
                             },
                             {
                                 label: 'Messages',
-                                description: 'Classement par messages envoyés',
+                                description: 'Ranking by messages sent',
                                 value: 'messages',
                                 emoji: '💬',
                                 default: category === 'messages'
                             },
                             {
-                                label: 'Temps vocal',
-                                description: 'Classement par temps en vocal',
+                                label: 'Voice Time',
+                                description: 'Ranking by voice channel time',
                                 value: 'voice',
                                 emoji: '🎙️',
                                 default: category === 'voice'
                             },
                             {
-                                label: 'Exploits',
-                                description: 'Classement par nombre d\'exploits',
+                                label: 'Achievements',
+                                description: 'Ranking by achievements count',
                                 value: 'achievements',
                                 emoji: '🏆',
                                 default: category === 'achievements'
                             },
                             {
-                                label: 'Réactions données',
-                                description: 'Classement par réactions données',
+                                label: 'Reactions Given',
+                                description: 'Ranking by reactions given',
                                 value: 'reactions_given',
                                 emoji: '👍',
                                 default: category === 'reactions_given'
-                            },
-                            {
-                                label: 'Réactions reçues',
-                                description: 'Classement par réactions reçues',
-                                value: 'reactions_received',
-                                emoji: '❤️',
-                                default: category === 'reactions_received'
                             }
                         ])
                 );
@@ -152,8 +142,8 @@ module.exports = {
             });
 
             const embed = bot.functions.createErrorEmbed(
-                'Erreur du classement',
-                'Une erreur est survenue lors de la génération du classement.'
+                'Leaderboard error',
+                'An error occurred while generating the leaderboard.'
             );
             await message.reply({ embeds: [embed] });
         }
@@ -195,9 +185,6 @@ module.exports = {
                     case 'stream':
                         value = userData.streamTime || 0;
                         break;
-                    case 'congratulations':
-                        value = (userData.congratulationsSent || 0) + (userData.congratulationsReceived || 0);
-                        break;
                 }
                 
                 if (value > 0) {
@@ -211,16 +198,15 @@ module.exports = {
 
     getCategoryDisplayName(category) {
         const names = {
-            messages: 'Messages envoyés',
-            voice: 'Temps vocal',
-            level: 'Niveau',
-            experience: 'Expérience',
-            reactions_given: 'Réactions données',
-            reactions_received: 'Réactions reçues',
-            achievements: 'Exploits débloqués',
-            camera: 'Temps caméra',
-            stream: 'Temps stream',
-            congratulations: 'Félicitations'
+            messages: 'Messages Sent',
+            voice: 'Voice Time',
+            level: 'Level',
+            experience: 'Experience',
+            reactions_given: 'Reactions Given',
+            reactions_received: 'Reactions Received',
+            achievements: 'Achievements',
+            camera: 'Camera Time',
+            stream: 'Stream Time'
         };
         return names[category] || category;
     },
@@ -231,12 +217,11 @@ module.exports = {
             voice: 'minutes',
             level: '',
             experience: 'XP',
-            reactions_given: 'réactions',
-            reactions_received: 'réactions',
-            achievements: 'exploits',
+            reactions_given: 'reactions',
+            reactions_received: 'reactions',
+            achievements: 'achievements',
             camera: 'minutes',
-            stream: 'minutes',
-            congratulations: 'félicitations'
+            stream: 'minutes'
         };
         return units[category] || '';
     }

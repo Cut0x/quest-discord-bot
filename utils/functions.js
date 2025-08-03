@@ -1,49 +1,25 @@
-// utils/functions.js - Fonctions utilitaires centralisées pour QuestBot Advanced
+// utils/functions.js - Fonctions refactorisées avec Canvas amélioré
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const { createCanvas, loadImage, registerFont } = require('canvas');
+const ImprovedCanvasUtils = require('./canvas');
 const fs = require('fs');
 const path = require('path');
 
-class BotFunctions {
+class ModernBotFunctions {
     constructor(config) {
         this.config = config;
         this.cache = new Map();
-        this.loadFonts();
-    }
-
-    // =================== GESTION DES POLICES ===================
-    loadFonts() {
-        try {
-            const fontsPath = path.join(__dirname, '..', 'assets', 'fonts');
-            if (fs.existsSync(fontsPath)) {
-                const fontFiles = fs.readdirSync(fontsPath).filter(file => 
-                    file.endsWith('.ttf') || file.endsWith('.otf')
-                );
-                
-                fontFiles.forEach(font => {
-                    const fontPath = path.join(fontsPath, font);
-                    const fontName = font.split('.')[0];
-                    registerFont(fontPath, { family: fontName });
-                    console.log(`🔤 Police chargée: ${fontName}`);
-                });
-            }
-        } catch (error) {
-            console.log('⚠️ Aucune police personnalisée trouvée, utilisation des polices par défaut');
-        }
+        this.canvas = new ImprovedCanvasUtils(config);
     }
 
     // =================== GESTION DES DONNÉES UTILISATEUR ===================
     
-    /**
-     * Obtient ou crée les données d'un utilisateur
-     */
     getUserData(database, userId, guildId) {
         if (!database.users[userId]) {
             database.users[userId] = {};
         }
         if (!database.users[userId][guildId]) {
             database.users[userId][guildId] = {
-                // Statistiques de base
+                // Core stats
                 messagesCount: 0,
                 reactionsGiven: 0,
                 reactionsReceived: 0,
@@ -55,43 +31,45 @@ class BotFunctions {
                 congratulationsSent: 0,
                 congratulationsReceived: 0,
                 
-                // Métadonnées
+                // Progression
                 achievements: [],
-                joinedAt: new Date().toISOString(),
-                lastActivity: new Date().toISOString(),
                 level: 1,
                 experience: 0,
                 
-                // Suivi temporel
-                dailyStats: {},
-                weeklyStats: {},
-                monthlyStats: {},
-                
-                // Sessions en cours
+                // Timestamps
+                joinedAt: new Date().toISOString(),
+                lastActivity: new Date().toISOString(),
                 lastVoiceJoin: null,
+                lastMessageTime: null,
+                
+                // Sessions
                 cameraSessionStart: null,
-                streamSessionStart: null,
-                lastMessageTime: null
+                streamSessionStart: null
             };
         }
         
-        // Mettre à jour la dernière activité
         database.users[userId][guildId].lastActivity = new Date().toISOString();
         return database.users[userId][guildId];
     }
 
-    // =================== SYSTÈME D'EXPLOITS ===================
+    // =================== SYSTÈME D'EXPLOITS MODERNE ===================
     
-    /**
-     * Vérifie et débloque les nouveaux exploits
-     */
     async checkAchievements(database, userId, guildId, guild, options = {}) {
         const userData = this.getUserData(database, userId, guildId);
         const newAchievements = [];
         const silent = options.silent || false;
 
+        // Vérifier si la config des achievements existe
+        if (!this.config.achievements) {
+            console.warn('⚠️ No achievements configuration found');
+            return newAchievements;
+        }
+
         for (const category in this.config.achievements) {
-            for (const achievement of this.config.achievements[category]) {
+            const categoryAchievements = this.config.achievements[category];
+            if (!Array.isArray(categoryAchievements)) continue;
+
+            for (const achievement of categoryAchievements) {
                 const achievementId = `${category}_${achievement.id}`;
                 
                 if (!userData.achievements.includes(achievementId)) {
@@ -137,7 +115,6 @@ class BotFunctions {
                         userData.achievements.push(achievementId);
                         userData.experience += achievement.xp || 100;
                         
-                        // Calculer le nouveau niveau
                         const newLevel = Math.floor(userData.experience / 1000) + 1;
                         const leveledUp = newLevel > userData.level;
                         userData.level = newLevel;
@@ -149,17 +126,17 @@ class BotFunctions {
                             newLevel: userData.level
                         });
                         
-                        // Attribuer le rôle si configuré
+                        // Role assignment
                         if (achievement.roleId) {
                             try {
                                 const member = await guild.members.fetch(userId);
                                 const role = guild.roles.cache.get(achievement.roleId);
                                 if (member && role && !member.roles.cache.has(role.id)) {
                                     await member.roles.add(role);
-                                    console.log(`🏆 Rôle ${role.name} attribué à ${member.displayName}`);
+                                    console.log(`✅ Role ${role.name} assigned to ${member.displayName}`);
                                 }
                             } catch (error) {
-                                console.error('❌ Erreur lors de l\'attribution du rôle:', error);
+                                console.error('❌ Error assigning role:', error);
                             }
                         }
                     }
@@ -168,284 +145,129 @@ class BotFunctions {
         }
 
         if (newAchievements.length > 0 && !silent) {
-            await this.sendAchievementNotification(userId, guildId, newAchievements, guild);
+            await this.sendModernAchievementNotification(userId, guildId, newAchievements, guild);
         }
 
         return newAchievements;
     }
 
-    /**
-     * Envoie une notification d'exploit
-     */
-    async sendAchievementNotification(userId, guildId, achievements, guild) {
+    // =================== NOTIFICATIONS MODERNES ===================
+    
+    async sendModernAchievementNotification(userId, guildId, achievements, guild) {
         try {
             const user = await guild.client.users.fetch(userId);
             const notificationChannel = guild.channels.cache.get(process.env.NOTIFICATION_CHANNEL_ID);
             
             for (const { achievement, category, leveledUp, newLevel } of achievements) {
-                // Créer une image d'achievement avec Canvas
-                const achievementCard = await this.createAchievementCard(user, achievement, category, leveledUp, newLevel);
+                // Créer une image d'achievement avec le système amélioré
+                let achievementCard = null;
+                try {
+                    achievementCard = await this.canvas.createModernAchievementCard(user, achievement, category, leveledUp, newLevel);
+                } catch (canvasError) {
+                    console.warn('⚠️ Canvas error for achievement notification:', canvasError.message);
+                }
                 
                 const embed = new EmbedBuilder()
-                    .setTitle('🎉 Nouvel exploit débloqué !')
-                    .setDescription(`**${user.displayName}** vient de débloquer l'exploit **${achievement.name}** ${achievement.emoji || '🏆'} !\n\n${achievement.description || 'Félicitations pour cet accomplissement !'}\n\n${leveledUp ? `🆙 **Niveau supérieur atteint:** ${newLevel} !` : ''}`)
-                    .setColor(this.config.colors.success)
-                    .setImage('attachment://achievement.png')
+                    .setTitle('🎉 Achievement Unlocked!')
+                    .setDescription(`**${user.displayName}** unlocked the **${achievement.name}** achievement!\n\n${achievement.description || 'Congratulations on this accomplishment!'}\n\n${leveledUp ? `🆙 **Level Up!** Now Level ${newLevel}!` : ''}`)
+                    .setColor('#667eea')
                     .setTimestamp()
-                    .setFooter({ text: `${this.config.serverName} • QuestBot Advanced` });
+                    .setFooter({ text: `${guild.name} • QuestBot Advanced` });
 
-                const attachment = new AttachmentBuilder(achievementCard, { name: 'achievement.png' });
+                const messageOptions = { embeds: [embed] };
+
+                if (achievementCard) {
+                    const attachment = new AttachmentBuilder(achievementCard, { name: 'achievement.png' });
+                    embed.setImage('attachment://achievement.png');
+                    messageOptions.files = [attachment];
+                }
 
                 if (notificationChannel) {
-                    await notificationChannel.send({ 
-                        embeds: [embed], 
-                        files: [attachment] 
-                    });
+                    await notificationChannel.send(messageOptions);
                 }
 
                 // Envoyer en privé si configuré
-                if (this.config.notifications.sendPrivate) {
+                if (process.env.SEND_PRIVATE_NOTIFICATIONS === 'true') {
                     try {
-                        await user.send({ 
-                            embeds: [embed], 
-                            files: [attachment] 
-                        });
+                        await user.send(messageOptions);
                     } catch (error) {
-                        console.log(`⚠️ Impossible d'envoyer le message privé à ${user.tag}`);
+                        console.log(`⚠️ Cannot send private message to ${user.tag}`);
                     }
                 }
             }
         } catch (error) {
-            console.error('❌ Erreur lors de l\'envoi de notification:', error);
+            console.error('❌ Error sending achievement notification:', error);
         }
     }
 
-    // =================== CRÉATION D'IMAGES CANVAS ===================
+    // =================== MÉTHODES CANVAS PRINCIPALES ===================
     
-    /**
-     * Crée une carte d'exploit
-     */
-    async createAchievementCard(user, achievement, category, leveledUp = false, newLevel = 1) {
-        const canvas = createCanvas(800, 400);
-        const ctx = canvas.getContext('2d');
-
-        // Arrière-plan avec gradient
-        const gradient = ctx.createLinearGradient(0, 0, 800, 400);
-        gradient.addColorStop(0, this.config.colors.primary + '40');
-        gradient.addColorStop(1, this.config.colors.secondary + '40');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 800, 400);
-
-        // Bordure
-        ctx.strokeStyle = this.config.colors.primary;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(10, 10, 780, 380);
-
-        // Avatar utilisateur
+    async createModernProfileCard(userId, guildId, user, userData, member = null) {
         try {
-            const avatar = await loadImage(user.displayAvatarURL({ extension: 'png', size: 128 }));
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(120, 120, 60, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(avatar, 60, 60, 120, 120);
-            ctx.restore();
+            return await this.canvas.createModernProfileCard(user, userData, member);
         } catch (error) {
-            // Avatar par défaut en cas d'erreur
-            ctx.fillStyle = this.config.colors.secondary;
-            ctx.beginPath();
-            ctx.arc(120, 120, 60, 0, Math.PI * 2);
-            ctx.fill();
+            console.error('❌ Error creating profile card:', error);
+            throw error;
         }
-
-        // Cercle autour de l'avatar
-        ctx.strokeStyle = this.config.colors.primary;
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.arc(120, 120, 66, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Nom de l'utilisateur
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 32px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(user.displayName, 220, 80);
-
-        // Nom de l'achievement
-        ctx.fillStyle = this.config.colors.primary;
-        ctx.font = 'bold 48px Arial';
-        ctx.fillText(achievement.name, 220, 140);
-
-        // Emoji de l'achievement
-        ctx.font = '64px Arial';
-        ctx.fillText(achievement.emoji || '🏆', 220, 220);
-
-        // Description
-        if (achievement.description) {
-            ctx.fillStyle = '#CCCCCC';
-            ctx.font = '24px Arial';
-            const words = achievement.description.split(' ');
-            let line = '';
-            let y = 260;
-            
-            for (let n = 0; n < words.length; n++) {
-                const testLine = line + words[n] + ' ';
-                const metrics = ctx.measureText(testLine);
-                const testWidth = metrics.width;
-                
-                if (testWidth > 500 && n > 0) {
-                    ctx.fillText(line, 220, y);
-                    line = words[n] + ' ';
-                    y += 30;
-                } else {
-                    line = testLine;
-                }
-            }
-            ctx.fillText(line, 220, y);
-        }
-
-        // Niveau si level up
-        if (leveledUp) {
-            ctx.fillStyle = this.config.colors.experience;
-            ctx.font = 'bold 28px Arial';
-            ctx.textAlign = 'right';
-            ctx.fillText(`NIVEAU ${newLevel}`, 770, 350);
-        }
-
-        // Date
-        ctx.fillStyle = '#888888';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(new Date().toLocaleDateString('fr-FR'), 770, 380);
-
-        return canvas.toBuffer();
     }
 
-    /**
-     * Crée une carte de profil utilisateur
-     */
-    async createProgressCard(userId, guildId, user, userData) {
-        const canvas = createCanvas(1000, 600);
-        const ctx = canvas.getContext('2d');
-
-        // Arrière-plan
-        const gradient = ctx.createLinearGradient(0, 0, 1000, 600);
-        gradient.addColorStop(0, '#1a1a2e');
-        gradient.addColorStop(1, '#16213e');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 1000, 600);
-
-        // En-tête
-        ctx.fillStyle = this.config.colors.primary;
-        ctx.fillRect(0, 0, 1000, 100);
-
-        // Avatar
+    async createModernAchievementCard(user, achievement, category, leveledUp = false, newLevel = 1) {
         try {
-            const avatar = await loadImage(user.displayAvatarURL({ extension: 'png', size: 128 }));
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(80, 50, 35, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(avatar, 45, 15, 70, 70);
-            ctx.restore();
+            return await this.canvas.createModernAchievementCard(user, achievement, category, leveledUp, newLevel);
         } catch (error) {
-            // Avatar par défaut
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(80, 50, 35, 0, Math.PI * 2);
-            ctx.fill();
+            console.error('❌ Error creating achievement card:', error);
+            throw error;
         }
-
-        // Nom et niveau
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 32px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText(user.displayName, 140, 45);
-        
-        ctx.font = '20px Arial';
-        ctx.fillText(`Niveau ${userData.level} • ${userData.experience} XP`, 140, 75);
-
-        // Statistiques
-        let y = 150;
-        const stats = [
-            { label: 'Messages', value: userData.messagesCount, emoji: '💬' },
-            { label: 'Réactions données', value: userData.reactionsGiven, emoji: '👍' },
-            { label: 'Réactions reçues', value: userData.reactionsReceived, emoji: '❤️' },
-            { label: 'Temps vocal', value: `${userData.voiceTime}min`, emoji: '🎙️' },
-            { label: 'Événements', value: userData.eventsParticipated, emoji: '🎭' },
-            { label: 'Félicitations envoyées', value: userData.congratulationsSent, emoji: '👏' }
-        ];
-
-        stats.forEach((stat, index) => {
-            const x = (index % 2) * 500 + 50;
-            const currentY = y + Math.floor(index / 2) * 80;
-
-            // Fond de la stat
-            ctx.fillStyle = '#2c2c54';
-            ctx.fillRect(x, currentY, 400, 60);
-
-            // Emoji et label
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = '24px Arial';
-            ctx.textAlign = 'left';
-            ctx.fillText(`${stat.emoji} ${stat.label}`, x + 20, currentY + 25);
-
-            // Valeur
-            ctx.font = 'bold 28px Arial';
-            ctx.textAlign = 'right';
-            ctx.fillText(stat.value.toString(), x + 380, currentY + 40);
-        });
-
-        return canvas.toBuffer();
     }
 
-    /**
-     * Crée un leaderboard visuel
-     */
-    async createLeaderboard(guildId, category = 'messages', limit = 10, database, client) {
-        const canvas = createCanvas(800, 600);
-        const ctx = canvas.getContext('2d');
+    async createModernLeaderboard(guildId, category = 'messages', limit = 10, database, client) {
+        try {
+            const users = this.getLeaderboardData(database.users, guildId, category);
+            const topUsers = users.slice(0, limit);
+            return await this.canvas.createModernLeaderboard(topUsers, category, limit, client);
+        } catch (error) {
+            console.error('❌ Error creating leaderboard:', error);
+            throw error;
+        }
+    }
 
-        // Arrière-plan
-        const gradient = ctx.createLinearGradient(0, 0, 800, 600);
-        gradient.addColorStop(0, '#667eea');
-        gradient.addColorStop(1, '#764ba2');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 800, 600);
-
-        // Titre
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 36px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`🏆 TOP ${limit.toString().toUpperCase()} - ${this.config.categories[category]?.name.toUpperCase() || category.toUpperCase()}`, 400, 60);
-
-        // Récupérer les données des utilisateurs
+    // =================== UTILITAIRES ===================
+    
+    getLeaderboardData(usersDb, guildId, category) {
         const users = [];
-        for (const userId in database.users) {
-            if (database.users[userId][guildId]) {
-                const userData = database.users[userId][guildId];
+        
+        for (const userId in usersDb) {
+            if (usersDb[userId][guildId]) {
+                const userData = usersDb[userId][guildId];
                 let value = 0;
                 
                 switch (category) {
                     case 'messages':
-                        value = userData.messagesCount;
-                        break;
-                    case 'reactions_given':
-                        value = userData.reactionsGiven;
-                        break;
-                    case 'reactions_received':
-                        value = userData.reactionsReceived;
+                        value = userData.messagesCount || 0;
                         break;
                     case 'voice':
-                        value = userData.voiceTime;
+                        value = userData.voiceTime || 0;
                         break;
                     case 'level':
-                        value = userData.level;
+                        value = userData.level || 1;
                         break;
                     case 'experience':
-                        value = userData.experience;
+                        value = userData.experience || 0;
+                        break;
+                    case 'reactions_given':
+                        value = userData.reactionsGiven || 0;
+                        break;
+                    case 'reactions_received':
+                        value = userData.reactionsReceived || 0;
+                        break;
+                    case 'achievements':
+                        value = userData.achievements?.length || 0;
+                        break;
+                    case 'camera':
+                        value = userData.cameraTime || 0;
+                        break;
+                    case 'stream':
+                        value = userData.streamTime || 0;
                         break;
                 }
                 
@@ -454,84 +276,35 @@ class BotFunctions {
                 }
             }
         }
-
-        // Trier et limiter
-        users.sort((a, b) => b.value - a.value);
-        const topUsers = users.slice(0, limit);
-
-        // Afficher le classement
-        let y = 120;
-        for (let i = 0; i < topUsers.length; i++) {
-            const user = topUsers[i];
-            const position = i + 1;
-            
-            // Fond de la ligne
-            ctx.fillStyle = position <= 3 ? '#FFD700' + '40' : '#FFFFFF' + '20';
-            ctx.fillRect(50, y, 700, 40);
-
-            // Position
-            ctx.fillStyle = position <= 3 ? '#FFD700' : '#FFFFFF';
-            ctx.font = 'bold 24px Arial';
-            ctx.textAlign = 'left';
-            ctx.fillText(`#${position}`, 70, y + 28);
-
-            // Nom d'utilisateur
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = '20px Arial';
-            try {
-                const discordUser = await client.users.fetch(user.userId);
-                ctx.fillText(discordUser.displayName || discordUser.username, 140, y + 28);
-            } catch {
-                ctx.fillText(`Utilisateur ${user.userId.slice(0, 8)}...`, 140, y + 28);
-            }
-
-            // Valeur
-            ctx.font = 'bold 20px Arial';
-            ctx.textAlign = 'right';
-            const suffix = category === 'voice' ? ' min' : '';
-            ctx.fillText(user.value + suffix, 720, y + 28);
-
-            y += 50;
-        }
-
-        return canvas.toBuffer();
+        
+        return users.sort((a, b) => b.value - a.value);
     }
 
-    // =================== GESTION DES FÉLICITATIONS ===================
-    
-    /**
-     * Détecte si un message contient des félicitations
-     */
     detectCongratulations(content) {
+        if (!this.config.congratulationKeywords) {
+            return false;
+        }
+        
         const lowerContent = content.toLowerCase();
         return this.config.congratulationKeywords.some(keyword => 
             lowerContent.includes(keyword.toLowerCase())
         );
     }
 
-    // =================== GESTION DU TEMPS VOCAL ===================
-    
-    /**
-     * Calcule le temps passé en vocal
-     */
     calculateVoiceTime(startTime) {
         if (!startTime) return 0;
-        return Math.floor((Date.now() - startTime) / 1000 / 60); // en minutes
+        return Math.floor((Date.now() - startTime) / 1000 / 60);
     }
 
-    // =================== UTILITAIRES DE FORMATAGE ===================
-    
-    /**
-     * Formate un nombre avec des espaces
-     */
     formatNumber(num) {
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        if (typeof num !== 'number') num = parseInt(num) || 0;
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
     }
 
-    /**
-     * Formate une durée en minutes
-     */
     formatDuration(minutes) {
+        if (typeof minutes !== 'number') minutes = parseInt(minutes) || 0;
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         
@@ -541,26 +314,18 @@ class BotFunctions {
         return `${mins}min`;
     }
 
-    /**
-     * Calcule le pourcentage de progression
-     */
     getProgressPercentage(current, target) {
+        if (target === 0) return 0;
         return Math.min(Math.round((current / target) * 100), 100);
     }
 
-    /**
-     * Obtient la prochaine étape importante
-     */
     getNextMilestone(current) {
         const milestones = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
         return milestones.find(m => m > current) || current + 1000;
     }
 
-    // =================== GESTION DES PERMISSIONS ===================
+    // =================== PERMISSIONS ===================
     
-    /**
-     * Vérifie les permissions d'un utilisateur
-     */
     checkPermissions(message, requiredPermissions) {
         if (!requiredPermissions || requiredPermissions.length === 0) return true;
         
@@ -588,21 +353,15 @@ class BotFunctions {
         return false;
     }
 
-    // =================== GESTION DU CACHE ===================
+    // =================== CACHE MANAGEMENT ===================
     
-    /**
-     * Ajoute un élément au cache
-     */
-    setCache(key, value, ttl = 300000) { // 5 minutes par défaut
+    setCache(key, value, ttl = 300000) {
         this.cache.set(key, {
             value,
             expires: Date.now() + ttl
         });
     }
 
-    /**
-     * Récupère un élément du cache
-     */
     getCache(key) {
         const item = this.cache.get(key);
         if (!item) return null;
@@ -615,23 +374,24 @@ class BotFunctions {
         return item.value;
     }
 
-    /**
-     * Nettoie le cache expiré
-     */
     cleanCache() {
         const now = Date.now();
+        const deleted = [];
+        
         for (const [key, item] of this.cache.entries()) {
             if (now > item.expires) {
                 this.cache.delete(key);
+                deleted.push(key);
             }
+        }
+        
+        if (deleted.length > 0) {
+            console.log(`🧹 Cache cleaned: ${deleted.length} items removed`);
         }
     }
 
-    // =================== SAUVEGARDE ET RESTAURATION ===================
+    // =================== DATABASE MANAGEMENT ===================
     
-    /**
-     * Sauvegarde la base de données
-     */
     saveDatabase(database) {
         try {
             // Créer une sauvegarde avant l'écriture
@@ -640,25 +400,29 @@ class BotFunctions {
                 if (!fs.existsSync(backupsDir)) {
                     fs.mkdirSync(backupsDir, { recursive: true });
                 }
-                const backup = `${backupsDir}/database_${Date.now()}.json`;
+                
+                // Créer une sauvegarde avec timestamp
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const backup = `${backupsDir}/database_${timestamp}.json`;
                 fs.copyFileSync('./database.json', backup);
                 
-                // Nettoyer les anciennes sauvegardes (garder les 10 dernières)
+                // Nettoyer les anciennes sauvegardes
                 this.cleanOldBackups(backupsDir, 10);
             }
             
+            // Ajouter des métadonnées
             database.lastModified = new Date().toISOString();
+            database.lastBackup = new Date().toISOString();
+            
+            // Écrire la base de données
             fs.writeFileSync('./database.json', JSON.stringify(database, null, 2));
             return true;
         } catch (error) {
-            console.error('❌ Erreur lors de la sauvegarde:', error);
+            console.error('❌ Database save error:', error);
             return false;
         }
     }
 
-    /**
-     * Nettoie les anciennes sauvegardes
-     */
     cleanOldBackups(backupsDir, keepCount) {
         try {
             const files = fs.readdirSync(backupsDir)
@@ -674,19 +438,14 @@ class BotFunctions {
                 const filesToDelete = files.slice(keepCount);
                 filesToDelete.forEach(file => {
                     fs.unlinkSync(file.path);
-                    console.log(`🗑️ Ancienne sauvegarde supprimée: ${file.name}`);
+                    console.log(`🗑️ Old backup deleted: ${file.name}`);
                 });
             }
         } catch (error) {
-            console.error('❌ Erreur lors du nettoyage des sauvegardes:', error);
+            console.error('❌ Error cleaning backups:', error);
         }
     }
 
-    // =================== VALIDATION DES DONNÉES ===================
-    
-    /**
-     * Valide les données utilisateur
-     */
     validateUserData(userData) {
         const requiredFields = [
             'messagesCount', 'reactionsGiven', 'reactionsReceived', 'voiceTime',
@@ -695,67 +454,101 @@ class BotFunctions {
             'level', 'experience'
         ];
 
+        let hasChanges = false;
+
         for (const field of requiredFields) {
             if (userData[field] === undefined || userData[field] === null) {
-                console.warn(`⚠️ Champ manquant détecté: ${field}, initialisation...`);
+                console.warn(`⚠️ Missing field detected: ${field}, initializing...`);
+                hasChanges = true;
+                
                 if (field === 'achievements') {
                     userData[field] = [];
-                } else if (typeof userData[field] === 'number' || field.includes('Count') || field.includes('Time')) {
-                    userData[field] = 0;
                 } else if (field === 'level') {
                     userData[field] = 1;
+                } else if (typeof userData[field] === 'number') {
+                    userData[field] = 0;
+                } else {
+                    userData[field] = 0;
                 }
             }
+        }
+
+        // Valider les types
+        if (typeof userData.level !== 'number' || userData.level < 1) {
+            userData.level = 1;
+            hasChanges = true;
+        }
+
+        if (typeof userData.experience !== 'number' || userData.experience < 0) {
+            userData.experience = 0;
+            hasChanges = true;
+        }
+
+        if (!Array.isArray(userData.achievements)) {
+            userData.achievements = [];
+            hasChanges = true;
+        }
+
+        if (hasChanges) {
+            console.log(`🔧 User data validated and corrected`);
         }
 
         return userData;
     }
 
-    // =================== GESTION DES ERREURS ===================
+    // =================== EMBED UTILITIES ===================
     
-    /**
-     * Crée un embed d'erreur
-     */
-    createErrorEmbed(title, description, color = null) {
+    createErrorEmbed(title, description, color = '#ef4444') {
         return new EmbedBuilder()
             .setTitle(`❌ ${title}`)
             .setDescription(description)
-            .setColor(color || this.config.colors.error)
+            .setColor(color)
             .setTimestamp();
     }
 
-    /**
-     * Crée un embed de succès
-     */
-    createSuccessEmbed(title, description, color = null) {
+    createSuccessEmbed(title, description, color = '#10b981') {
         return new EmbedBuilder()
             .setTitle(`✅ ${title}`)
             .setDescription(description)
-            .setColor(color || this.config.colors.success)
+            .setColor(color)
             .setTimestamp();
     }
 
-    /**
-     * Crée un embed d'information
-     */
-    createInfoEmbed(title, description, color = null) {
+    createInfoEmbed(title, description, color = '#667eea') {
         return new EmbedBuilder()
             .setTitle(`ℹ️ ${title}`)
             .setDescription(description)
-            .setColor(color || this.config.colors.info)
+            .setColor(color)
             .setTimestamp();
     }
 
-    /**
-     * Log une erreur de manière cohérente
-     */
+    createWarningEmbed(title, description, color = '#f59e0b') {
+        return new EmbedBuilder()
+            .setTitle(`⚠️ ${title}`)
+            .setDescription(description)
+            .setColor(color)
+            .setTimestamp();
+    }
+
     logError(context, error, additionalInfo = {}) {
-        console.error(`❌ [${context}]`, error);
+        console.error(`❌ [${context}]`, error.message || error);
         
-        if (additionalInfo.userId) console.error(`   Utilisateur: ${additionalInfo.userId}`);
-        if (additionalInfo.guildId) console.error(`   Serveur: ${additionalInfo.guildId}`);
-        if (additionalInfo.command) console.error(`   Commande: ${additionalInfo.command}`);
+        if (additionalInfo.userId) console.error(`   👤 User: ${additionalInfo.userId}`);
+        if (additionalInfo.guildId) console.error(`   🏠 Guild: ${additionalInfo.guildId}`);
+        if (additionalInfo.command) console.error(`   ⚡ Command: ${additionalInfo.command}`);
+        
+        // Log stack trace en mode debug
+        if (process.env.DEBUG_MODE === 'true' && error.stack) {
+            console.error(`   📋 Stack: ${error.stack}`);
+        }
+    }
+
+    logInfo(context, message, additionalInfo = {}) {
+        console.log(`ℹ️ [${context}] ${message}`);
+        
+        if (additionalInfo.userId) console.log(`   👤 User: ${additionalInfo.userId}`);
+        if (additionalInfo.guildId) console.log(`   🏠 Guild: ${additionalInfo.guildId}`);
     }
 }
 
-module.exports = BotFunctions;
+module.exports = ModernBotFunctions;

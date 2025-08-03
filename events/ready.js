@@ -1,4 +1,4 @@
-// events/ready.js
+// events/ready.js - Événement ready moderne
 const { ActivityType } = require('discord.js');
 
 module.exports = {
@@ -7,69 +7,57 @@ module.exports = {
     async execute(client, bot) {
         console.log(`
 ╔══════════════════════════════════════════════════════════╗
-║                🚀 QUESTBOT ADVANCED                      ║
+║                🚀 QUESTBOT ADVANCED v3.0                ║
+║                     MODERN EDITION                       ║
 ║                                                          ║
-║  ✅ Bot connecté: ${client.user.tag.padEnd(35)}║
-║  📊 Serveurs: ${client.guilds.cache.size.toString().padEnd(42)}║
-║  👥 Utilisateurs: ${client.users.cache.size.toString().padEnd(38)}║
-║  🎮 Commandes chargées: ${bot.commands.size.toString().padEnd(30)}║
+║  ✅ Bot connected: ${client.user.tag.padEnd(35)}║
+║  📊 Servers: ${client.guilds.cache.size.toString().padEnd(42)}║
+║  👥 Users: ${client.users.cache.size.toString().padEnd(44)}║
+║  🎮 Commands loaded: ${bot.commands.size.toString().padEnd(32)}║
 ║  📈 Version: ${bot.database.version.padEnd(42)}║
 ║                                                          ║
-║  🎯 Système d'exploits: ACTIF                           ║
-║  🖼️  Canvas: ACTIVÉ                                     ║
-║  💾 Base de données: CHARGÉE                            ║
+║  🎨 Modern Canvas: ENABLED                              ║
+║  🖼️  Glassmorphism: ACTIVE                              ║
+║  🏆 Achievement System: ACTIVE                          ║
+║  💾 Database: LOADED                                    ║
 ╚══════════════════════════════════════════════════════════╝
         `);
 
-        // Définir l'activité du bot
         const activities = [
-            { name: 'les exploits des membres', type: ActivityType.Watching },
-            { name: 'le serveur grandir', type: ActivityType.Watching },
-            { name: 'les statistiques', type: ActivityType.Competing },
+            { name: 'Modern Statistics', type: ActivityType.Watching },
+            { name: 'Canvas Art Generation', type: ActivityType.Creating },
+            { name: 'Achievement Progress', type: ActivityType.Competing },
             { name: `${process.env.PREFIX || '!'}help`, type: ActivityType.Listening },
-            { name: 'les nouveaux défis', type: ActivityType.Playing }
+            { name: 'Beautiful Visuals', type: ActivityType.Playing }
         ];
 
         let currentActivity = 0;
         
-        // Changer l'activité toutes les 5 minutes
         const updateActivity = () => {
             client.user.setActivity(activities[currentActivity]);
             currentActivity = (currentActivity + 1) % activities.length;
         };
 
-        updateActivity(); // Activité initiale
-        setInterval(updateActivity, 5 * 60 * 1000); // 5 minutes
+        updateActivity();
+        setInterval(updateActivity, 5 * 60 * 1000);
 
-        // Initialiser les statistiques de performance
         bot.stats.uptime = Date.now();
         
-        // Envoyer un message de démarrage dans le canal admin si configuré
         const adminLogChannelId = process.env.ADMIN_LOG_CHANNEL_ID;
         if (adminLogChannelId) {
             const adminChannel = client.channels.cache.get(adminLogChannelId);
             if (adminChannel) {
                 const { EmbedBuilder } = require('discord.js');
                 const embed = new EmbedBuilder()
-                    .setTitle('🚀 QuestBot Advanced - Démarrage')
-                    .setDescription(`Le bot a été démarré avec succès !\n\n**Version:** ${bot.database.version}\n**Environnement:** ${process.env.NODE_ENV || 'development'}\n**Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`)
-                    .setColor('#00FF7F')
+                    .setTitle('🚀 QuestBot Advanced v3.0 - Started')
+                    .setDescription(`Modern Canvas Edition successfully started!\n\n**Version:** ${bot.database.version}\n**Environment:** ${process.env.NODE_ENV || 'development'}\n**Features:** Modern Canvas, Glassmorphism, Advanced Stats\n**Timestamp:** <t:${Math.floor(Date.now() / 1000)}:F>`)
+                    .setColor('#4ade80')
                     .setTimestamp();
                 
                 adminChannel.send({ embeds: [embed] }).catch(console.error);
             }
         }
-
-        // Planifier les sauvegardes automatiques
-        if (bot.config?.backup?.enabled) {
-            const backupInterval = bot.config.backup.interval || 3600000; // 1 heure par défaut
-            setInterval(() => {
-                bot.performAutoBackup();
-            }, backupInterval);
-            
-            console.log(`📦 Sauvegardes automatiques planifiées toutes les ${backupInterval / 60000} minutes`);
-        }
         
-        console.log('🎮 QuestBot Advanced est prêt à traquer les exploits !');
+        console.log('🎨 QuestBot Advanced Modern Edition is ready to generate beautiful visuals!');
     }
 };

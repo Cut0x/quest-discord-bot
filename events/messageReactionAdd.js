@@ -1,6 +1,4 @@
-
-
-// events/messageReactionAdd.js
+// events/messageReactionAdd.js - Suivi moderne des réactions
 const config = require('../config.js');
 
 module.exports = {
@@ -9,36 +7,50 @@ module.exports = {
         if (user.bot) return;
         if (!reaction.message.guild) return;
 
-        // Gérer les réactions partielles
+        // Handle partial reactions
         if (reaction.partial) {
             try {
                 await reaction.fetch();
             } catch (error) {
-                console.error('Erreur lors de la récupération de la réaction:', error);
+                console.error('Error fetching reaction:', error);
                 return;
             }
         }
 
-        // L'utilisateur a donné une réaction
-        const userData = bot.getUserData(user.id, reaction.message.guild.id);
-        userData.reactionsGiven++;
-        
-        const givenXP = config.experience?.rewards?.reaction_given || 2;
-        userData.experience += givenXP;
+        try {
+            // User gave a reaction
+            const userData = bot.getUserData(user.id, reaction.message.guild.id);
+            userData.reactionsGiven++;
+            
+            const givenXP = config.experience?.rewards?.reaction_given || 2;
+            userData.experience += givenXP;
 
-        // L'auteur du message reçoit une réaction
-        if (!reaction.message.author.bot && reaction.message.author.id !== user.id) {
-            const authorData = bot.getUserData(reaction.message.author.id, reaction.message.guild.id);
-            authorData.reactionsReceived++;
-            
-            const receivedXP = config.experience?.rewards?.reaction_received || 3;
-            authorData.experience += receivedXP;
-            
-            // Vérifier les achievements pour l'auteur
-            bot.checkAchievements(reaction.message.author.id, reaction.message.guild.id, reaction.message.guild);
+            // Message author receives a reaction
+            if (!reaction.message.author.bot && reaction.message.author.id !== user.id) {
+                const authorData = bot.getUserData(reaction.message.author.id, reaction.message.guild.id);
+                authorData.reactionsReceived++;
+                
+                const receivedXP = config.experience?.rewards?.reaction_received || 3;
+                authorData.experience += receivedXP;
+                
+                // Check achievements for message author
+                bot.checkAchievements(reaction.message.author.id, reaction.message.guild.id, reaction.message.guild, { silent: true });
+            }
+
+            // Check achievements for user who reacted
+            bot.checkAchievements(user.id, reaction.message.guild.id, reaction.message.guild, { silent: true });
+
+            // Save changes asynchronously
+            setImmediate(() => {
+                bot.saveDatabase();
+            });
+
+        } catch (error) {
+            bot.functions.logError('MessageReactionAdd', error, {
+                userId: user.id,
+                guildId: reaction.message.guild.id,
+                messageId: reaction.message.id
+            });
         }
-
-        // Vérifier les achievements pour celui qui réagit
-        bot.checkAchievements(user.id, reaction.message.guild.id, reaction.message.guild);
     }
 };
