@@ -4,9 +4,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Fichiers de configuration sensibles
-config.js
-
 # Base de données
 database.json
 backup/

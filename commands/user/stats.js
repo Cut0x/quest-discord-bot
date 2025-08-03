@@ -1,25 +1,23 @@
-// commands/user/stats.js - Commande de statistiques
+// commands/user/stats.js - Commande de statistiques moderne
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 
 module.exports = {
     data: {
         name: 'stats',
-        description: 'Affiche vos statistiques ou celles d\'un autre utilisateur',
-        aliases: ['statistiques', 'profil', 'profile'],
-        usage: '[utilisateur]',
+        description: 'Display your statistics or another user\'s statistics',
+        aliases: ['statistics', 'profile', 'me'],
+        usage: '[user]',
         category: 'user',
-        cooldown: 30000, // 30 secondes
-        permissions: [] // Aucune permission requise
+        cooldown: 30000,
+        permissions: []
     },
 
     async execute(message, args, bot) {
         try {
-            // Déterminer l'utilisateur cible
             let targetUser = message.author;
             let targetMember = message.member;
 
             if (args.length > 0) {
-                // Essayer de récupérer l'utilisateur mentionné ou par ID
                 const mention = message.mentions.users.first();
                 if (mention) {
                     targetUser = mention;
@@ -30,135 +28,102 @@ module.exports = {
                         targetMember = await message.guild.members.fetch(args[0]).catch(() => null);
                     } catch (error) {
                         const errorEmbed = bot.functions.createErrorEmbed(
-                            'Utilisateur non trouvé',
-                            'L\'utilisateur spécifié n\'a pas été trouvé.'
+                            'User not found',
+                            'The specified user was not found.'
                         );
                         return message.reply({ embeds: [errorEmbed] });
                     }
                 }
             }
 
-            // Vérifier si l'utilisateur est un bot
             if (targetUser.bot) {
                 const errorEmbed = bot.functions.createErrorEmbed(
-                    'Utilisateur invalide',
-                    'Impossible d\'afficher les statistiques d\'un bot.'
+                    'Invalid user',
+                    'Cannot display statistics for a bot.'
                 );
                 return message.reply({ embeds: [errorEmbed] });
             }
 
-            // Obtenir les données utilisateur
             const userData = bot.getUserData(targetUser.id, message.guild.id);
 
-            // Vérifier si l'utilisateur a des données
             if (userData.messagesCount === 0 && userData.voiceTime === 0 && userData.achievements.length === 0) {
                 const embed = bot.functions.createInfoEmbed(
-                    'Aucune activité',
-                    `${targetUser.displayName} n'a pas encore d'activité enregistrée sur ce serveur.`
+                    'No activity',
+                    `${targetUser.displayName} has no recorded activity on this server yet.`
                 );
                 return message.reply({ embeds: [embed] });
             }
 
-            // Créer l'embed de base
+            // Create modern profile card
+            let attachment = null;
+            try {
+                const profileImage = await bot.createModernProfileCard(
+                    targetUser.id,
+                    message.guild.id,
+                    targetUser,
+                    targetMember
+                );
+                attachment = new AttachmentBuilder(profileImage, { name: 'profile.png' });
+            } catch (canvasError) {
+                console.warn('⚠️ Canvas error for profile:', canvasError.message);
+            }
+
             const embed = new EmbedBuilder()
-                .setTitle(`📊 Statistiques de ${targetUser.displayName}`)
-                .setThumbnail(targetUser.displayAvatarURL({ dynamic: true, size: 256 }))
-                .setColor(bot.config?.colors?.primary || '#FFD700')
+                .setTitle(`📊 ${targetUser.displayName}'s Statistics`)
+                .setColor('#667eea')
                 .setTimestamp()
                 .setFooter({ 
-                    text: `${bot.config?.serverName || 'Server'} • QuestBot Advanced`,
+                    text: `QuestBot Advanced • Modern Profile System`,
                     iconURL: message.guild.iconURL()
                 });
 
-            // Calculer le niveau et l'XP suivant
-            const currentLevelXP = (userData.level - 1) * 1000;
-            const nextLevelXP = userData.level * 1000;
-            const progressXP = userData.experience - currentLevelXP;
-            const neededXP = nextLevelXP - currentLevelXP;
-            const progressPercent = Math.round((progressXP / neededXP) * 100);
+            if (attachment) {
+                embed.setImage('attachment://profile.png');
+                embed.setDescription('Complete profile with modern design and statistics visualization.');
+            } else {
+                // Fallback text statistics
+                const currentLevelXP = (userData.level - 1) * 1000;
+                const nextLevelXP = userData.level * 1000;
+                const progressXP = userData.experience - currentLevelXP;
+                const neededXP = nextLevelXP - currentLevelXP;
+                const progressPercent = Math.round((progressXP / neededXP) * 100);
 
-            // Informations de base
-            embed.addFields(
-                {
-                    name: '🎖️ Niveau et Expérience',
-                    value: `**Niveau:** ${userData.level}\n**XP Total:** ${bot.functions.formatNumber(userData.experience)}\n**Progression:** ${bot.functions.formatNumber(progressXP)}/${bot.functions.formatNumber(neededXP)} XP (${progressPercent}%)`,
-                    inline: true
-                },
-                {
-                    name: '🏆 Exploits débloqués',
-                    value: `**${userData.achievements.length}** exploits\n${this.getTopAchievements(userData, bot)}`,
-                    inline: true
-                },
-                {
-                    name: '📅 Membre depuis',
-                    value: `<t:${Math.floor(new Date(userData.joinedAt).getTime() / 1000)}:R>`,
-                    inline: true
-                }
-            );
-
-            // Statistiques détaillées
-            embed.addFields(
-                {
-                    name: '💬 Messages',
-                    value: bot.functions.formatNumber(userData.messagesCount),
-                    inline: true
-                },
-                {
-                    name: '🎙️ Temps vocal',
-                    value: bot.functions.formatDuration(userData.voiceTime),
-                    inline: true
-                },
-                {
-                    name: '❤️ Réactions',
-                    value: `${bot.functions.formatNumber(userData.reactionsGiven)} données\n${bot.functions.formatNumber(userData.reactionsReceived)} reçues`,
-                    inline: true
-                }
-            );
-
-            // Statistiques avancées
-            if (userData.cameraTime > 0 || userData.streamTime > 0 || userData.congratulationsSent > 0) {
-                embed.addFields(
+                embed.addFields([
                     {
-                        name: '📹 Caméra & Stream',
-                        value: `Caméra: ${bot.functions.formatDuration(userData.cameraTime)}\nStream: ${bot.functions.formatDuration(userData.streamTime)}`,
+                        name: '🎖️ Level & Experience',
+                        value: `**Level:** ${userData.level}\n**Total XP:** ${bot.formatNumber(userData.experience)}\n**Progress:** ${bot.formatNumber(progressXP)}/${bot.formatNumber(neededXP)} XP (${progressPercent}%)`,
                         inline: true
                     },
                     {
-                        name: '🎉 Félicitations',
-                        value: `${bot.functions.formatNumber(userData.congratulationsSent)} envoyées\n${bot.functions.formatNumber(userData.congratulationsReceived)} reçues`,
+                        name: '🏆 Achievements',
+                        value: `**${userData.achievements.length}** unlocked\n${this.getTopAchievements(userData, bot)}`,
                         inline: true
+                    },
+                    {
+                        name: '📊 Activity Statistics',
+                        value: `**Messages:** ${bot.formatNumber(userData.messagesCount)}\n**Voice Time:** ${bot.formatDuration(userData.voiceTime)}\n**Reactions:** ${bot.formatNumber(userData.reactionsGiven)}/${bot.formatNumber(userData.reactionsReceived)}`,
+                        inline: false
                     }
-                );
+                ]);
+
+                if (userData.cameraTime > 0 || userData.streamTime > 0) {
+                    embed.addFields({
+                        name: '🎥 Media Activity',
+                        value: `**Camera Time:** ${bot.formatDuration(userData.cameraTime)}\n**Stream Time:** ${bot.formatDuration(userData.streamTime)}`,
+                        inline: true
+                    });
+                }
+
+                if (targetMember?.premiumSince) {
+                    const boostSince = Math.floor(targetMember.premiumSince.getTime() / 1000);
+                    embed.addFields({
+                        name: '🚀 Server Boost',
+                        value: `Boosting since <t:${boostSince}:R>`,
+                        inline: true
+                    });
+                }
             }
 
-            // Ajouter des informations sur le boost si applicable
-            if (targetMember && targetMember.premiumSince) {
-                const boostSince = Math.floor(targetMember.premiumSince.getTime() / 1000);
-                embed.addFields({
-                    name: '🚀 Boost Serveur',
-                    value: `Booste depuis <t:${boostSince}:R>`,
-                    inline: true
-                });
-            }
-
-            // Créer l'image de profil avec Canvas
-            let attachment = null;
-            try {
-                const profileImage = await bot.functions.createProgressCard(
-                    targetUser.id, 
-                    message.guild.id, 
-                    targetUser, 
-                    userData
-                );
-                
-                attachment = new AttachmentBuilder(profileImage, { name: 'profile.png' });
-                embed.setImage('attachment://profile.png');
-            } catch (canvasError) {
-                console.warn('⚠️ Erreur Canvas pour le profil:', canvasError.message);
-                // Continuer sans l'image
-            }
-
-            // Envoyer la réponse
             const replyOptions = { embeds: [embed] };
             if (attachment) {
                 replyOptions.files = [attachment];
@@ -166,11 +131,10 @@ module.exports = {
 
             await message.reply(replyOptions);
 
-            // Ajouter une réaction de succès
             try {
                 await message.react('📊');
             } catch (error) {
-                // Ignorer les erreurs de réaction
+                // Ignore reaction errors
             }
 
         } catch (error) {
@@ -181,8 +145,8 @@ module.exports = {
             });
 
             const errorEmbed = bot.functions.createErrorEmbed(
-                'Erreur de commande',
-                'Une erreur est survenue lors de la récupération des statistiques.'
+                'Command error',
+                'An error occurred while retrieving statistics.'
             );
 
             if (process.env.DEBUG_MODE === 'true') {
@@ -197,15 +161,11 @@ module.exports = {
         }
     },
 
-    /**
-     * Récupère les derniers exploits pour l'affichage
-     */
     getTopAchievements(userData, bot) {
         if (userData.achievements.length === 0) {
-            return '*Aucun exploit débloqué*';
+            return '*No achievements unlocked*';
         }
 
-        // Récupérer les 3 derniers exploits
         const recentAchievements = userData.achievements.slice(-3);
         const achievementNames = [];
 
@@ -214,12 +174,12 @@ module.exports = {
             const achievement = bot.config?.achievements?.[category]?.find(a => a.id === id);
             
             if (achievement) {
-                achievementNames.push(`${achievement.emoji || '🏆'} ${achievement.name}`);
+                achievementNames.push(`${achievement.name}`);
             }
         }
 
         return achievementNames.length > 0 
             ? achievementNames.join('\n')
-            : '*Exploits récents indisponibles*';
+            : '*Recent achievements unavailable*';
     }
 };

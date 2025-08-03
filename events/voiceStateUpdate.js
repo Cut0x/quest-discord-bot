@@ -1,4 +1,4 @@
-// events/voiceStateUpdate.js - Version corrigée
+// events/voiceStateUpdate.js - Événement vocal moderne
 const config = require('../config.js');
 
 module.exports = {
@@ -15,28 +15,27 @@ module.exports = {
 
             // =================== GESTION VOCAL ===================
             
-            // Utilisateur rejoint un canal vocal
+            // User joins voice channel
             if (!oldState.channel && newState.channel) {
                 userData.lastVoiceJoin = now;
                 bot.voiceTracking.set(userId, now);
                 
-                console.log(`🎤 ${newState.member?.displayName} a rejoint ${newState.channel.name}`);
+                console.log(`🎤 ${newState.member?.displayName} joined ${newState.channel.name}`);
             }
             
-            // Utilisateur quitte un canal vocal
+            // User leaves voice channel
             else if (oldState.channel && !newState.channel) {
                 if (userData.lastVoiceJoin) {
                     const timeSpent = bot.functions.calculateVoiceTime(userData.lastVoiceJoin);
                     
-                    if (timeSpent > 0) { // Minimum 1 minute pour compter
+                    if (timeSpent > 0) {
                         userData.voiceTime += timeSpent;
                         
                         const voiceXP = (config.experience?.rewards?.voice_minute || 1) * timeSpent;
                         userData.experience += voiceXP;
                         
-                        console.log(`🎤 ${oldState.member?.displayName} a quitté ${oldState.channel.name} (${bot.functions.formatDuration(timeSpent)})`);
+                        console.log(`🎤 ${oldState.member?.displayName} left ${oldState.channel.name} (${bot.formatDuration(timeSpent)})`);
                         
-                        // Vérifier les exploits de manière asynchrone
                         setImmediate(() => {
                             bot.checkAchievements(userId, guildId, oldState.guild, { silent: false });
                         });
@@ -47,7 +46,7 @@ module.exports = {
                 }
             }
             
-            // Utilisateur change de canal
+            // User switches voice channels
             else if (oldState.channel && newState.channel && oldState.channel.id !== newState.channel.id) {
                 if (userData.lastVoiceJoin) {
                     const timeSpent = bot.functions.calculateVoiceTime(userData.lastVoiceJoin);
@@ -59,72 +58,70 @@ module.exports = {
                         userData.experience += voiceXP;
                     }
                     
-                    // Redémarrer le compteur pour le nouveau canal
+                    // Restart counter for new channel
                     userData.lastVoiceJoin = now;
                     bot.voiceTracking.set(userId, now);
                     
-                    console.log(`🎤 ${newState.member?.displayName} a changé de ${oldState.channel.name} vers ${newState.channel.name}`);
+                    console.log(`🎤 ${newState.member?.displayName} moved from ${oldState.channel.name} to ${newState.channel.name}`);
                 }
             }
 
-            // =================== GESTION CAMÉRA ===================
+            // =================== CAMERA MANAGEMENT ===================
             
             if (newState.channel) {
-                // Caméra activée
+                // Camera activated
                 if (!oldState.selfVideo && newState.selfVideo) {
                     userData.cameraSessionStart = now;
-                    console.log(`📹 ${newState.member?.displayName} a activé sa caméra`);
+                    console.log(`📹 ${newState.member?.displayName} enabled camera`);
                 }
-                // Caméra désactivée
+                // Camera deactivated
                 else if (oldState.selfVideo && !newState.selfVideo && userData.cameraSessionStart) {
                     const sessionTime = bot.functions.calculateVoiceTime(userData.cameraSessionStart);
                     
                     if (sessionTime > 0) {
                         userData.cameraTime += sessionTime;
                         
-                        // Vérifier les exploits de caméra
                         setImmediate(() => {
                             bot.checkAchievements(userId, guildId, newState.guild, { silent: false });
                         });
                         
-                        console.log(`📹 ${newState.member?.displayName} a désactivé sa caméra (${bot.functions.formatDuration(sessionTime)})`);
+                        console.log(`📹 ${newState.member?.displayName} disabled camera (${bot.formatDuration(sessionTime)})`);
                     }
                     
                     delete userData.cameraSessionStart;
                 }
 
-                // =================== GESTION STREAM ===================
+                // =================== STREAM MANAGEMENT ===================
                 
-                // Partage d'écran activé
+                // Screen share activated
                 if (!oldState.streaming && newState.streaming) {
                     userData.streamSessionStart = now;
-                    console.log(`📺 ${newState.member?.displayName} a commencé le partage d'écran`);
+                    console.log(`📺 ${newState.member?.displayName} started screen sharing`);
                 }
-                // Partage d'écran désactivé
+                // Screen share deactivated
                 else if (oldState.streaming && !newState.streaming && userData.streamSessionStart) {
                     const sessionTime = bot.functions.calculateVoiceTime(userData.streamSessionStart);
                     
                     if (sessionTime > 0) {
                         userData.streamTime += sessionTime;
                         
-                        // Vérifier les exploits de stream
                         setImmediate(() => {
                             bot.checkAchievements(userId, guildId, newState.guild, { silent: false });
                         });
                         
-                        console.log(`📺 ${newState.member?.displayName} a arrêté le partage d'écran (${bot.functions.formatDuration(sessionTime)})`);
+                        console.log(`📺 ${newState.member?.displayName} stopped screen sharing (${bot.formatDuration(sessionTime)})`);
                     }
                     
                     delete userData.streamSessionStart;
                 }
             }
             
-            // Nettoyer les sessions si l'utilisateur quitte complètement le vocal
+            // Clean up sessions if user completely leaves voice
             if (oldState.channel && !newState.channel) {
                 this.cleanupUserSessions(userData, bot);
             }
 
-            // Sauvegarder les modifications (de manière asynchrone)
+            // Save changes asynchronously
             setImmediate(() => {
                 bot.saveDatabase();
             });
@@ -140,29 +137,29 @@ module.exports = {
     },
 
     /**
-     * Nettoie les sessions en cours quand l'utilisateur quitte le vocal
+     * Clean up ongoing sessions when user leaves voice
      */
     cleanupUserSessions(userData, bot) {
         let totalTime = 0;
         
-        // Session caméra
+        // Camera session
         if (userData.cameraSessionStart) {
             const sessionTime = bot.functions.calculateVoiceTime(userData.cameraSessionStart);
             if (sessionTime > 0) {
                 userData.cameraTime += sessionTime;
                 totalTime += sessionTime;
-                console.log(`📹 Session caméra fermée: ${bot.functions.formatDuration(sessionTime)}`);
+                console.log(`📹 Camera session closed: ${bot.formatDuration(sessionTime)}`);
             }
             delete userData.cameraSessionStart;
         }
         
-        // Session stream
+        // Stream session
         if (userData.streamSessionStart) {
             const sessionTime = bot.functions.calculateVoiceTime(userData.streamSessionStart);
             if (sessionTime > 0) {
                 userData.streamTime += sessionTime;
                 totalTime += sessionTime;
-                console.log(`📺 Session stream fermée: ${bot.functions.formatDuration(sessionTime)}`);
+                console.log(`📺 Stream session closed: ${bot.formatDuration(sessionTime)}`);
             }
             delete userData.streamSessionStart;
         }

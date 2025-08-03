@@ -1,12 +1,12 @@
-// commands/user/help.js
+// commands/user/help.js - Aide moderne
 const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
     data: {
         name: 'help',
-        description: 'Affiche l\'aide du bot',
-        aliases: ['aide', 'commands', 'commandes'],
-        usage: '[commande]',
+        description: 'Display bot help',
+        aliases: ['aide', 'commands', 'commandes', 'h'],
+        usage: '[command]',
         category: 'user',
         cooldown: 10000
     },
@@ -19,73 +19,71 @@ module.exports = {
         }
         
         const embed = new EmbedBuilder()
-            .setTitle('🤖 QuestBot Advanced - Aide')
-            .setDescription(`Bienvenue dans **QuestBot Advanced** !\n\nCe bot suit votre progression et vos exploits sur **${message.guild.name}**. Utilisez les menus ci-dessous pour explorer les commandes ou consultez le code source sur GitHub.`)
-            .setColor('#FFD700')
+            .setTitle('🤖 QuestBot Advanced - Modern Help')
+            .setDescription(`Welcome to **QuestBot Advanced** with modern design!\n\nThis bot tracks your progression and achievements on **${message.guild.name}** with beautiful visual statistics and modern Canvas-generated images.`)
+            .setColor('#667eea')
             .setThumbnail(bot.client.user.displayAvatarURL())
             .addFields([
                 {
-                    name: '📊 Commandes principales',
-                    value: `\`${process.env.PREFIX || '!'}stats\` - Vos statistiques\n\`${process.env.PREFIX || '!'}profile\` - Votre profil complet\n\`${process.env.PREFIX || '!'}achievements\` - Tous les exploits\n\`${process.env.PREFIX || '!'}leaderboard\` - Classements`,
+                    name: '📊 Main Commands',
+                    value: `\`${process.env.PREFIX || '!'}stats\` - Modern statistics with visual cards\n\`${process.env.PREFIX || '!'}leaderboard\` - Visual leaderboards\n\`${process.env.PREFIX || '!'}achievements\` - Achievement system\n\`${process.env.PREFIX || '!'}profile\` - Complete user profiles`,
                     inline: true
                 },
                 {
-                    name: '🎮 Système de progression',
-                    value: `• **Messages** - Trackés automatiquement\n• **Vocal** - Temps en salon vocal\n• **Réactions** - Données et reçues\n• **Événements** - Participations\n• **Niveaux** - Basés sur l'XP`,
+                    name: '🎨 New Features',
+                    value: `• **Modern Canvas Images** - Professional designs\n• **Glassmorphism Effects** - Modern UI elements\n• **Advanced Statistics** - Detailed tracking\n• **Visual Progress** - Beautiful progress bars\n• **Achievement Cards** - Stunning notifications`,
                     inline: true
                 },
                 {
-                    name: '🔗 Liens utiles',
-                    value: `[**Code source**](${process.env.GITHUB_REPO_URL || 'https://github.com'})\n[**Support**](${process.env.SUPPORT_URL || 'https://discord.gg'})\n[**Documentation**](${process.env.DOCS_URL || 'https://github.com'})`,
+                    name: '✨ What\'s Tracked',
+                    value: `• **Messages** - Auto-tracked\n• **Voice Activity** - Time in voice channels\n• **Reactions** - Given and received\n• **Camera/Stream** - Video activity\n• **Achievements** - Unlock system\n• **Levels** - XP-based progression`,
                     inline: false
                 }
             ])
-            .setFooter({ text: `${message.guild.name} • QuestBot Advanced v2.0` })
+            .setFooter({ text: `${message.guild.name} • QuestBot Advanced v3.0 • Modern Canvas Edition` })
             .setTimestamp();
         
-        // Menu de sélection des catégories de commandes
         const selectMenu = new ActionRowBuilder()
             .addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId('help_category')
-                    .setPlaceholder('Choisir une catégorie de commandes')
+                    .setPlaceholder('Choose a command category')
                     .addOptions([
                         {
-                            label: 'Commandes utilisateur',
-                            description: 'Stats, profil, exploits...',
+                            label: 'User Commands',
+                            description: 'Stats, profiles, achievements...',
                             value: 'user',
                             emoji: '👤'
                         },
                         {
-                            label: 'Commandes administrateur',
-                            description: 'Gestion, modération...',
+                            label: 'Admin Commands',
+                            description: 'Management, moderation...',
                             value: 'admin',
                             emoji: '🛡️'
                         },
                         {
-                            label: 'Utilitaires',
-                            description: 'Outils divers',
+                            label: 'Utilities',
+                            description: 'Various tools',
                             value: 'utility',
                             emoji: '🔧'
                         }
                     ])
             );
         
-        // Boutons d'actions rapides
         const buttonRow = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setLabel('📊 Mes Stats')
+                    .setLabel('📊 My Stats')
                     .setCustomId('quick_stats')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
-                    .setLabel('🏆 Mes Exploits')
-                    .setCustomId('quick_achievements')
+                    .setLabel('🏆 Leaderboard')
+                    .setCustomId('quick_leaderboard')
                     .setStyle(ButtonStyle.Secondary),
                 new ButtonBuilder()
-                    .setLabel('🔗 GitHub')
-                    .setURL(process.env.GITHUB_REPO_URL || 'https://github.com')
-                    .setStyle(ButtonStyle.Link)
+                    .setLabel('🎨 Canvas Demo')
+                    .setCustomId('canvas_demo')
+                    .setStyle(ButtonStyle.Success)
             );
         
         await message.reply({ 
@@ -99,13 +97,13 @@ module.exports = {
                        bot.commands.find(cmd => cmd.data.aliases?.includes(commandName));
         
         if (!command) {
-            return message.reply(`❌ Commande \`${commandName}\` non trouvée.`);
+            return message.reply(`❌ Command \`${commandName}\` not found.`);
         }
         
         const embed = new EmbedBuilder()
-            .setTitle(`📖 Aide - ${command.data.name}`)
-            .setDescription(command.data.description || 'Aucune description disponible')
-            .setColor('#FFD700')
+            .setTitle(`📖 Help - ${command.data.name}`)
+            .setDescription(command.data.description || 'No description available')
+            .setColor('#667eea')
             .addFields([
                 {
                     name: '📝 Usage',
@@ -113,20 +111,20 @@ module.exports = {
                     inline: true
                 },
                 {
-                    name: '📂 Catégorie',
-                    value: command.data.category || 'Non définie',
+                    name: '📂 Category',
+                    value: command.data.category || 'Undefined',
                     inline: true
                 },
                 {
                     name: '⏰ Cooldown',
-                    value: command.data.cooldown ? `${command.data.cooldown / 1000}s` : 'Aucun',
+                    value: command.data.cooldown ? `${command.data.cooldown / 1000}s` : 'None',
                     inline: true
                 }
             ]);
         
         if (command.data.aliases?.length) {
             embed.addFields({
-                name: '🔀 Alias',
+                name: '🔀 Aliases',
                 value: command.data.aliases.map(alias => `\`${alias}\``).join(', '),
                 inline: false
             });

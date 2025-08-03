@@ -1,382 +1,687 @@
-// utils/canvas.js - Utilitaires avancés pour Canvas
-const { createCanvas, loadImage, registerFont } = require('canvas');
-const config = require('../config.js');
+// utils/canvas.js - Canvas moderne amélioré avec Roboto uniquement
+const { createCanvas, loadImage } = require('canvas');
 
-class CanvasUtils {
-    constructor() {
-        this.defaultFont = 'Arial';
-        this.loadCustomFonts();
+class ImprovedCanvasUtils {
+    constructor(config) {
+        this.config = config;
+        this.fonts = {
+            primary: 'Roboto, Arial, sans-serif',
+            secondary: 'Roboto, Arial, sans-serif',
+            fallback: 'Arial, sans-serif'
+        };
+        this.colors = {
+            primary: '#667eea',
+            secondary: '#764ba2',
+            accent: '#f093fb',
+            success: '#10b981',
+            warning: '#f59e0b',
+            error: '#ef4444',
+            background: {
+                dark: '#0f172a',
+                medium: '#1e293b',
+                light: '#334155'
+            },
+            text: {
+                primary: '#ffffff',
+                secondary: '#e2e8f0',
+                muted: '#94a3b8'
+            },
+            glass: 'rgba(255, 255, 255, 0.1)',
+            shadow: 'rgba(0, 0, 0, 0.4)'
+        };
     }
 
-    loadCustomFonts() {
-        try {
-            const fs = require('fs');
-            const path = require('path');
-            const fontsPath = path.join(__dirname, '..', 'assets', 'fonts');
-            
-            if (fs.existsSync(fontsPath)) {
-                const fontFiles = fs.readdirSync(fontsPath).filter(file => 
-                    file.endsWith('.ttf') || file.endsWith('.otf')
-                );
-                
-                fontFiles.forEach(font => {
-                    const fontPath = path.join(fontsPath, font);
-                    const fontName = font.split('.')[0];
-                    registerFont(fontPath, { family: fontName });
-                    console.log(`✅ Police chargée: ${fontName}`);
-                });
-            }
-        } catch (error) {
-            console.log('⚠️ Erreur lors du chargement des polices:', error.message);
-        }
-    }
-
-    // =================== CRÉATION D'IMAGES AVANCÉES ===================
-
-    async createAdvancedProfile(user, userData, member) {
-        const canvas = createCanvas(1200, 800);
+    // =================== PROFILE CARD MODERNE AMÉLIORÉE ===================
+    async createModernProfileCard(user, userData, member) {
+        const canvas = createCanvas(900, 600);
         const ctx = canvas.getContext('2d');
 
-        // Arrière-plan avec gradient complexe
-        await this.drawAdvancedBackground(ctx, 1200, 800);
+        // Background moderne avec gradient amélioré
+        this.drawEnhancedBackground(ctx, 900, 600);
 
-        // Avatar avec effet glow
-        await this.drawGlowingAvatar(ctx, user, 100, 100, 80);
+        // Header section avec avatar
+        await this.drawImprovedProfileHeader(ctx, user, userData, member, 40, 40);
 
-        // Informations utilisateur
-        this.drawUserInfo(ctx, user, userData, member, 220, 80);
+        // Stats grid améliorée
+        this.drawEnhancedStatsGrid(ctx, userData, 40, 220);
 
-        // Barres de progression animées
-        this.drawProgressBars(ctx, userData, 50, 300);
+        // Progress bars modernes
+        this.drawImprovedProgressBars(ctx, userData, 40, 400);
 
-        // Statistiques en graphique
-        this.drawStatsGraph(ctx, userData, 600, 300);
+        // Achievement preview
+        this.drawEnhancedAchievementPreview(ctx, userData, 500, 220);
 
-        // Derniers exploits
-        this.drawRecentAchievements(ctx, userData, 50, 600);
-
-        // Bordure décorative
-        this.drawDecorativeBorder(ctx, 1200, 800);
+        // Footer avec timestamp
+        this.drawFooter(ctx, 900, 600);
 
         return canvas.toBuffer();
     }
 
-    async createAchievementBanner(user, achievement, category) {
-        const canvas = createCanvas(1000, 400);
+    // =================== ACHIEVEMENT CARD MODERNE AMÉLIORÉE ===================
+    async createModernAchievementCard(user, achievement, category, leveledUp = false, newLevel = 1) {
+        const canvas = createCanvas(700, 400);
         const ctx = canvas.getContext('2d');
 
-        // Arrière-plan thématique basé sur la rareté
-        const rarity = config.rarities[achievement.rarity] || config.rarities.common;
-        await this.drawRarityBackground(ctx, 1000, 400, rarity);
+        // Background avec effet glassmorphism amélioré
+        this.drawEnhancedGlassBackground(ctx, 700, 400, this.colors.primary);
 
-        // Effet de particules
-        this.drawParticleEffect(ctx, 1000, 400, rarity.color);
-
-        // Avatar utilisateur avec cadre doré
-        await this.drawFramedAvatar(ctx, user, 100, 150, 100, rarity.color);
-
-        // Texte principal avec effet 3D
-        this.draw3DText(ctx, achievement.name, 250, 180, '48px bold Arial', '#FFFFFF', rarity.color);
-
-        // Description avec style élégant
-        this.drawStyledText(ctx, achievement.description, 250, 230, '24px Arial', '#E0E0E0', 700);
-
-        // Emoji géant avec glow
-        this.drawGlowingEmoji(ctx, achievement.emoji || '🏆', 850, 200, 120);
-
-        // Badge de rareté
-        this.drawRarityBadge(ctx, rarity, 20, 20);
-
-        // Timestamp décoratif
-        this.drawTimestamp(ctx, 980, 380);
+        // Achievement content amélioré
+        await this.drawEnhancedAchievementContent(ctx, user, achievement, category, leveledUp, newLevel);
 
         return canvas.toBuffer();
     }
 
-    async createLeaderboardImage(leaderboardData, category, limit) {
-        const canvas = createCanvas(900, 600 + (limit * 50));
+    // =================== LEADERBOARD MODERNE AMÉLIORÉ ===================
+    async createModernLeaderboard(leaderboardData, category, limit, client) {
+        const canvas = createCanvas(800, Math.max(500, 150 + (limit * 60)));
         const ctx = canvas.getContext('2d');
 
-        // Arrière-plan élégant
-        await this.drawLeaderboardBackground(ctx, 900, 600 + (limit * 50));
+        // Background
+        this.drawEnhancedBackground(ctx, 800, canvas.height);
 
-        // En-tête avec style
-        this.drawLeaderboardHeader(ctx, category, 450, 60);
+        // Header amélioré
+        this.drawEnhancedLeaderboardHeader(ctx, category, 800);
 
-        // Podium pour le top 3
-        await this.drawPodium(ctx, leaderboardData.slice(0, 3), 150, 150);
+        // User list améliorée
+        await this.drawEnhancedUserList(ctx, leaderboardData, limit, client, 40, 150);
 
-        // Liste des autres positions
-        await this.drawLeaderboardList(ctx, leaderboardData.slice(3, limit), 50, 400);
+        // Footer
+        this.drawFooter(ctx, 800, canvas.height);
 
         return canvas.toBuffer();
     }
 
-    // =================== MÉTHODES DE DESSIN SPÉCIALISÉES ===================
+    // =================== MÉTHODES DE DESSIN AMÉLIORÉES ===================
 
-    async drawAdvancedBackground(ctx, width, height) {
-        // Gradient principal
+    drawEnhancedBackground(ctx, width, height) {
+        // Base gradient amélioré
         const gradient = ctx.createLinearGradient(0, 0, width, height);
-        gradient.addColorStop(0, '#1a1a2e');
-        gradient.addColorStop(0.3, '#16213e');
-        gradient.addColorStop(0.7, '#0f3460');
-        gradient.addColorStop(1, '#533483');
+        gradient.addColorStop(0, this.colors.background.dark);
+        gradient.addColorStop(0.3, this.colors.background.medium);
+        gradient.addColorStop(0.7, this.colors.background.light);
+        gradient.addColorStop(1, '#475569');
         
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
 
-        // Effet de vagues
-        ctx.save();
-        ctx.globalCompositeOperation = 'overlay';
-        this.drawWavePattern(ctx, width, height);
-        ctx.restore();
+        // Pattern subtil amélioré
+        this.drawEnhancedPattern(ctx, width, height);
 
-        // Points lumineux
-        this.drawLightPoints(ctx, width, height, 50);
+        // Accent gradient overlay amélioré
+        const accentGradient = ctx.createRadialGradient(width * 0.2, height * 0.2, 0, width * 0.5, height * 0.5, width * 0.8);
+        accentGradient.addColorStop(0, this.colors.primary + '25');
+        accentGradient.addColorStop(0.5, this.colors.secondary + '15');
+        accentGradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = accentGradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // Effet de brillance en haut
+        const topShine = ctx.createLinearGradient(0, 0, 0, height * 0.3);
+        topShine.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+        topShine.addColorStop(1, 'transparent');
+        ctx.fillStyle = topShine;
+        ctx.fillRect(0, 0, width, height * 0.3);
     }
 
-    async drawGlowingAvatar(ctx, user, x, y, radius) {
+    drawEnhancedGlassBackground(ctx, width, height, accentColor) {
+        // Dark base amélioré
+        const baseGradient = ctx.createLinearGradient(0, 0, 0, height);
+        baseGradient.addColorStop(0, this.colors.background.dark);
+        baseGradient.addColorStop(1, this.colors.background.medium);
+        ctx.fillStyle = baseGradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // Glass effect principal
+        const glassGradient = ctx.createLinearGradient(0, 0, 0, height);
+        glassGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+        glassGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.08)');
+        glassGradient.addColorStop(1, 'rgba(255, 255, 255, 0.12)');
+        
+        ctx.fillStyle = glassGradient;
+        this.roundRect(ctx, 30, 30, width - 60, height - 60, 25);
+        ctx.fill();
+
+        // Border principal
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        this.roundRect(ctx, 30, 30, width - 60, height - 60, 25);
+        ctx.stroke();
+
+        // Accent border avec glow
+        ctx.shadowColor = accentColor;
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = accentColor + '60';
+        ctx.lineWidth = 3;
+        this.roundRect(ctx, 32, 32, width - 64, height - 64, 23);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Highlight en haut
+        const highlight = ctx.createLinearGradient(0, 30, 0, 80);
+        highlight.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+        highlight.addColorStop(1, 'transparent');
+        ctx.fillStyle = highlight;
+        this.roundRect(ctx, 30, 30, width - 60, 50, 25);
+        ctx.fill();
+    }
+
+    drawEnhancedPattern(ctx, width, height) {
+        ctx.save();
+        ctx.globalAlpha = 0.04;
+        
+        // Pattern en diamant
+        for (let x = 0; x < width; x += 60) {
+            for (let y = 0; y < height; y += 60) {
+                const offsetX = (y / 60) % 2 === 0 ? 0 : 30;
+                ctx.fillStyle = this.colors.text.primary;
+                ctx.fillRect(x + offsetX, y, 2, 2);
+                ctx.fillRect(x + offsetX + 30, y + 30, 2, 2);
+            }
+        }
+        
+        ctx.restore();
+    }
+
+    async drawImprovedProfileHeader(ctx, user, userData, member, x, y) {
+        // Container pour le header
+        const headerHeight = 140;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        this.roundRect(ctx, x, y, 820, headerHeight, 15);
+        ctx.fill();
+
+        // Avatar avec style moderne amélioré
+        await this.drawEnhancedAvatar(ctx, user, x + 20, y + 20, 100);
+
+        // User info avec meilleure disposition
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.font = `bold 32px ${this.fonts.primary}`;
+        ctx.fillText(user.displayName, x + 150, y + 50);
+
+        // Level badge amélioré
+        this.drawEnhancedBadge(ctx, `LEVEL ${userData.level}`, x + 150, y + 65, this.colors.primary);
+
+        // XP info avec style
+        ctx.fillStyle = this.colors.text.secondary;
+        ctx.font = `18px ${this.fonts.primary}`;
+        ctx.fillText(`${this.formatNumber(userData.experience)} XP Total`, x + 150, y + 105);
+
+        // Status indicators améliorés
+        if (member?.premiumSince) {
+            this.drawEnhancedBadge(ctx, 'BOOSTER', x + 350, y + 65, this.colors.accent);
+        }
+
+        // Joined date
+        ctx.fillStyle = this.colors.text.muted;
+        ctx.font = `14px ${this.fonts.primary}`;
+        const joinedDate = new Date(userData.joinedAt).toLocaleDateString('fr-FR');
+        ctx.fillText(`Member since ${joinedDate}`, x + 150, y + 125);
+    }
+
+    async drawEnhancedAvatar(ctx, user, x, y, size) {
         try {
             const avatar = await loadImage(user.displayAvatarURL({ extension: 'png', size: 256 }));
             
-            // Effet glow
+            // Shadow plus prononcée
             ctx.save();
-            ctx.shadowColor = config.colors.primary;
-            ctx.shadowBlur = 20;
+            ctx.shadowColor = this.colors.shadow;
+            ctx.shadowBlur = 25;
+            ctx.shadowOffsetY = 10;
+            
+            // Clip circle
             ctx.beginPath();
-            ctx.arc(x + radius, y + radius, radius + 10, 0, Math.PI * 2);
-            ctx.fillStyle = config.colors.primary + '40';
-            ctx.fill();
-            ctx.restore();
-
-            // Avatar circulaire
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(x + radius, y + radius, radius, 0, Math.PI * 2);
+            ctx.arc(x + size/2, y + size/2, size/2, 0, Math.PI * 2);
             ctx.closePath();
             ctx.clip();
-            ctx.drawImage(avatar, x, y, radius * 2, radius * 2);
+            
+            // Draw avatar
+            ctx.drawImage(avatar, x, y, size, size);
             ctx.restore();
 
-            // Bordure dorée
-            ctx.strokeStyle = config.colors.primary;
+            // Border avec glow
+            ctx.shadowColor = this.colors.primary;
+            ctx.shadowBlur = 10;
+            ctx.strokeStyle = this.colors.primary;
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.arc(x + radius, y + radius, radius + 2, 0, Math.PI * 2);
+            ctx.arc(x + size/2, y + size/2, size/2 + 2, 0, Math.PI * 2);
             ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Highlight sur l'avatar
+            const highlight = ctx.createRadialGradient(x + size*0.3, y + size*0.3, 0, x + size/2, y + size/2, size/2);
+            highlight.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            highlight.addColorStop(0.7, 'rgba(255, 255, 255, 0.1)');
+            highlight.addColorStop(1, 'transparent');
+            
+            ctx.fillStyle = highlight;
+            ctx.beginPath();
+            ctx.arc(x + size/2, y + size/2, size/2, 0, Math.PI * 2);
+            ctx.fill();
 
         } catch (error) {
-            // Avatar de fallback
-            ctx.fillStyle = config.colors.secondary;
+            // Fallback avatar amélioré
+            const fallbackGradient = ctx.createRadialGradient(x + size/2, y + size/2, 0, x + size/2, y + size/2, size/2);
+            fallbackGradient.addColorStop(0, this.colors.background.light);
+            fallbackGradient.addColorStop(1, this.colors.background.medium);
+            
+            ctx.fillStyle = fallbackGradient;
             ctx.beginPath();
-            ctx.arc(x + radius, y + radius, radius, 0, Math.PI * 2);
+            ctx.arc(x + size/2, y + size/2, size/2, 0, Math.PI * 2);
             ctx.fill();
+
+            // Icône utilisateur par défaut
+            ctx.fillStyle = this.colors.text.muted;
+            ctx.font = `${size/3}px ${this.fonts.primary}`;
+            ctx.textAlign = 'center';
+            ctx.fillText('👤', x + size/2, y + size/2 + size/9);
+            ctx.textAlign = 'left';
         }
     }
 
-    drawUserInfo(ctx, user, userData, member, x, y) {
-        // Nom avec effet de gradient
-        const nameGradient = ctx.createLinearGradient(x, y - 20, x + 400, y + 20);
-        nameGradient.addColorStop(0, '#FFD700');
-        nameGradient.addColorStop(1, '#FFA500');
+    drawEnhancedBadge(ctx, text, x, y, color) {
+        const padding = 12;
+        const height = 28;
         
-        ctx.fillStyle = nameGradient;
-        ctx.font = 'bold 42px Arial';
-        ctx.fillText(user.displayName, x, y);
+        ctx.font = `bold 14px ${this.fonts.primary}`;
+        const width = ctx.measureText(text).width + padding * 2;
 
-        // Niveau avec badge
-        this.drawLevelBadge(ctx, userData.level, x, y + 40);
+        // Background avec gradient
+        const badgeGradient = ctx.createLinearGradient(x, y, x, y + height);
+        badgeGradient.addColorStop(0, color + '60');
+        badgeGradient.addColorStop(1, color + '40');
+        ctx.fillStyle = badgeGradient;
+        this.roundRect(ctx, x, y, width, height, height/2);
+        ctx.fill();
 
-        // XP avec barre de progression
-        this.drawXPBar(ctx, userData.experience, userData.level, x, y + 90);
+        // Border avec glow
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = color + 'aa';
+        ctx.lineWidth = 2;
+        this.roundRect(ctx, x, y, width, height, height/2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
 
-        // Statut membre premium si applicable
-        if (member?.premiumSince) {
-            this.drawPremiumBadge(ctx, x + 400, y - 10);
-        }
+        // Text avec shadow
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 2;
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x + width/2, y + height/2 + 5);
+        ctx.textAlign = 'left';
+        ctx.shadowBlur = 0;
     }
 
-    drawProgressBars(ctx, userData, x, y) {
+    drawEnhancedStatsGrid(ctx, userData, x, y) {
         const stats = [
-            { label: 'Messages', current: userData.messagesCount, max: this.getNextMilestone(userData.messagesCount), color: '#7289DA' },
-            { label: 'Temps vocal', current: userData.voiceTime, max: this.getNextMilestone(userData.voiceTime), color: '#4ECDC4' },
-            { label: 'Réactions', current: userData.reactionsGiven, max: this.getNextMilestone(userData.reactionsGiven), color: '#FF6B6B' },
-            { label: 'Félicitations', current: userData.congratulationsSent, max: this.getNextMilestone(userData.congratulationsSent), color: '#54A0FF' }
+            { label: 'Messages', value: this.formatNumber(userData.messagesCount), color: this.colors.primary, icon: '💬' },
+            { label: 'Voice Time', value: this.formatDuration(userData.voiceTime), color: this.colors.secondary, icon: '🎙️' },
+            { label: 'Reactions', value: this.formatNumber(userData.reactionsGiven), color: this.colors.accent, icon: '❤️' },
+            { label: 'Achievements', value: userData.achievements.length.toString(), color: this.colors.success, icon: '🏆' }
         ];
 
+        const cardWidth = 100;
+        const cardHeight = 80;
+        const gap = 25;
+
         stats.forEach((stat, index) => {
-            const barY = y + (index * 60);
-            this.drawAnimatedProgressBar(ctx, stat, x, barY, 500);
+            const cardX = x + (index * (cardWidth + gap));
+            
+            // Card background avec gradient
+            const cardGradient = ctx.createLinearGradient(cardX, y, cardX, y + cardHeight);
+            cardGradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+            cardGradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+            ctx.fillStyle = cardGradient;
+            this.roundRect(ctx, cardX, y, cardWidth, cardHeight, 12);
+            ctx.fill();
+
+            // Accent border avec glow
+            ctx.shadowColor = stat.color;
+            ctx.shadowBlur = 8;
+            ctx.strokeStyle = stat.color + '80';
+            ctx.lineWidth = 2;
+            this.roundRect(ctx, cardX, y, cardWidth, cardHeight, 12);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Icon (emoji remplacé par symbole)
+            ctx.fillStyle = stat.color;
+            ctx.font = `20px ${this.fonts.primary}`;
+            ctx.textAlign = 'center';
+            ctx.fillText(stat.icon, cardX + cardWidth/2, y + 25);
+
+            // Value
+            ctx.fillStyle = this.colors.text.primary;
+            ctx.font = `bold 18px ${this.fonts.primary}`;
+            ctx.fillText(stat.value, cardX + cardWidth/2, y + 45);
+
+            // Label
+            ctx.fillStyle = this.colors.text.muted;
+            ctx.font = `12px ${this.fonts.primary}`;
+            ctx.fillText(stat.label, cardX + cardWidth/2, y + 65);
         });
-    }
 
-    drawAnimatedProgressBar(ctx, stat, x, y, width) {
-        const height = 30;
-        const progress = Math.min(stat.current / stat.max, 1);
-
-        // Fond de la barre
-        ctx.fillStyle = '#2C2F33';
-        ctx.fillRect(x, y, width, height);
-
-        // Barre de progression avec gradient
-        const gradient = ctx.createLinearGradient(x, y, x + width, y);
-        gradient.addColorStop(0, stat.color);
-        gradient.addColorStop(1, stat.color + 'AA');
-        
-        ctx.fillStyle = gradient;
-        ctx.fillRect(x, y, width * progress, height);
-
-        // Effet de brillance
-        const glowGradient = ctx.createLinearGradient(x, y, x, y + height);
-        glowGradient.addColorStop(0, '#FFFFFF40');
-        glowGradient.addColorStop(0.5, '#FFFFFF20');
-        glowGradient.addColorStop(1, '#FFFFFF00');
-        
-        ctx.fillStyle = glowGradient;
-        ctx.fillRect(x, y, width * progress, height / 2);
-
-        // Bordure
-        ctx.strokeStyle = '#23272A';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, width, height);
-
-        // Label
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 16px Arial';
-        ctx.fillText(`${stat.label}: ${this.formatNumber(stat.current)}/${this.formatNumber(stat.max)}`, x, y - 5);
-
-        // Pourcentage
-        ctx.font = 'bold 14px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${Math.round(progress * 100)}%`, x + width / 2, y + height / 2 + 5);
         ctx.textAlign = 'left';
     }
 
-    drawLevelBadge(ctx, level, x, y) {
-        const badgeWidth = 80;
-        const badgeHeight = 30;
-
-        // Fond du badge
-        const gradient = ctx.createLinearGradient(x, y, x + badgeWidth, y + badgeHeight);
-        gradient.addColorStop(0, '#9932CC');
-        gradient.addColorStop(1, '#4B0082');
-        
-        ctx.fillStyle = gradient;
-        ctx.fillRect(x, y, badgeWidth, badgeHeight);
-
-        // Bordure
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, badgeWidth, badgeHeight);
-
-        // Texte
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`NIV ${level}`, x + badgeWidth / 2, y + badgeHeight / 2 + 5);
-        ctx.textAlign = 'left';
-    }
-
-    drawXPBar(ctx, currentXP, level, x, y) {
-        const currentLevelXP = (level - 1) * 1000;
-        const nextLevelXP = level * 1000;
-        const progressXP = currentXP - currentLevelXP;
+    drawImprovedProgressBars(ctx, userData, x, y) {
+        const currentLevelXP = (userData.level - 1) * 1000;
+        const nextLevelXP = userData.level * 1000;
+        const progressXP = userData.experience - currentLevelXP;
         const neededXP = nextLevelXP - currentLevelXP;
         const progress = Math.min(progressXP / neededXP, 1);
 
         const barWidth = 400;
-        const barHeight = 20;
+        const barHeight = 25;
 
-        // Fond
-        ctx.fillStyle = '#36393F';
-        ctx.fillRect(x, y, barWidth, barHeight);
+        // Container
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        this.roundRect(ctx, x - 10, y - 10, barWidth + 20, barHeight + 40, 15);
+        ctx.fill();
 
-        // Progression
-        const xpGradient = ctx.createLinearGradient(x, y, x + barWidth, y);
-        xpGradient.addColorStop(0, '#9932CC');
-        xpGradient.addColorStop(1, '#FF6B6B');
+        // Label
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.font = `bold 16px ${this.fonts.primary}`;
+        ctx.fillText('Experience Progress', x, y - 20);
+
+        // Background de la barre
+        ctx.fillStyle = this.colors.background.light;
+        this.roundRect(ctx, x, y, barWidth, barHeight, barHeight/2);
+        ctx.fill();
+
+        // Progress fill avec gradient amélioré
+        const progressGradient = ctx.createLinearGradient(x, y, x + barWidth * progress, y);
+        progressGradient.addColorStop(0, this.colors.primary);
+        progressGradient.addColorStop(0.5, this.colors.accent);
+        progressGradient.addColorStop(1, this.colors.secondary);
         
-        ctx.fillStyle = xpGradient;
-        ctx.fillRect(x, y, barWidth * progress, barHeight);
+        ctx.fillStyle = progressGradient;
+        this.roundRect(ctx, x, y, barWidth * progress, barHeight, barHeight/2);
+        ctx.fill();
 
-        // Bordure
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, barWidth, barHeight);
+        // Glow effect amélioré
+        ctx.save();
+        ctx.shadowColor = this.colors.primary;
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = this.colors.primary + '60';
+        this.roundRect(ctx, x, y, barWidth * progress, barHeight, barHeight/2);
+        ctx.fill();
+        ctx.restore();
 
-        // Texte XP
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = '14px Arial';
-        ctx.fillText(`${this.formatNumber(progressXP)}/${this.formatNumber(neededXP)} XP`, x + 10, y + 15);
+        // Highlight sur la barre
+        const highlight = ctx.createLinearGradient(x, y, x, y + barHeight/2);
+        highlight.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+        highlight.addColorStop(1, 'transparent');
+        ctx.fillStyle = highlight;
+        this.roundRect(ctx, x, y, barWidth * progress, barHeight/2, barHeight/2);
+        ctx.fill();
+
+        // Text avec ombre
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+        ctx.shadowBlur = 3;
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.font = `bold 14px ${this.fonts.primary}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`${this.formatNumber(progressXP)} / ${this.formatNumber(neededXP)} XP (${Math.round(progress * 100)}%)`, x + barWidth/2, y + barHeight/2 + 5);
+        ctx.textAlign = 'left';
+        ctx.shadowBlur = 0;
     }
 
-    draw3DText(ctx, text, x, y, font, frontColor, backColor) {
-        ctx.font = font;
-        
-        // Ombre
-        ctx.fillStyle = '#00000080';
-        ctx.fillText(text, x + 3, y + 3);
+    drawEnhancedAchievementPreview(ctx, userData, x, y) {
+        const width = 320;
+        const height = 160;
 
-        // Profondeur 3D
-        for (let i = 0; i < 3; i++) {
-            ctx.fillStyle = backColor;
-            ctx.fillText(text, x - i, y - i);
+        // Background container
+        const containerGradient = ctx.createLinearGradient(x, y, x, y + height);
+        containerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+        containerGradient.addColorStop(1, 'rgba(255, 255, 255, 0.05)');
+        ctx.fillStyle = containerGradient;
+        this.roundRect(ctx, x, y, width, height, 15);
+        ctx.fill();
+
+        // Border avec glow
+        ctx.shadowColor = this.colors.success;
+        ctx.shadowBlur = 10;
+        ctx.strokeStyle = this.colors.success + '60';
+        ctx.lineWidth = 2;
+        this.roundRect(ctx, x, y, width, height, 15);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Title avec style
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.font = `bold 18px ${this.fonts.primary}`;
+        ctx.fillText('🏆 Achievement Progress', x + 20, y + 35);
+
+        // Achievement count avec style
+        ctx.fillStyle = this.colors.text.secondary;
+        ctx.font = `16px ${this.fonts.primary}`;
+        ctx.fillText(`${userData.achievements.length} Total Unlocked`, x + 20, y + 60);
+
+        // Progress indicator
+        const totalAchievements = 50;
+        const completionRate = Math.round((userData.achievements.length / totalAchievements) * 100);
+        
+        ctx.fillStyle = this.colors.text.muted;
+        ctx.font = `14px ${this.fonts.primary}`;
+        ctx.fillText(`${completionRate}% Collection Complete`, x + 20, y + 85);
+
+        // Mini progress bar améliorée
+        const miniBarWidth = 280;
+        const miniBarHeight = 8;
+        const miniY = y + 100;
+
+        ctx.fillStyle = this.colors.background.light;
+        this.roundRect(ctx, x + 20, miniY, miniBarWidth, miniBarHeight, miniBarHeight/2);
+        ctx.fill();
+
+        const miniProgress = completionRate / 100;
+        const miniGradient = ctx.createLinearGradient(x + 20, miniY, x + 20 + miniBarWidth * miniProgress, miniY);
+        miniGradient.addColorStop(0, this.colors.success);
+        miniGradient.addColorStop(1, this.colors.accent);
+        ctx.fillStyle = miniGradient;
+        this.roundRect(ctx, x + 20, miniY, miniBarWidth * miniProgress, miniBarHeight, miniBarHeight/2);
+        ctx.fill();
+
+        // Recent achievements text
+        ctx.fillStyle = this.colors.text.muted;
+        ctx.font = `12px ${this.fonts.primary}`;
+        ctx.fillText('Keep earning achievements to level up faster!', x + 20, y + 135);
+    }
+
+    async drawEnhancedAchievementContent(ctx, user, achievement, category, leveledUp, newLevel) {
+        const centerX = 350;
+        const centerY = 200;
+
+        // Title avec glow
+        ctx.shadowColor = this.colors.warning;
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.font = `bold 28px ${this.fonts.primary}`;
+        ctx.textAlign = 'center';
+        ctx.fillText('🎉 Achievement Unlocked!', centerX, 80);
+        ctx.shadowBlur = 0;
+
+        // Achievement name avec style
+        ctx.fillStyle = this.colors.warning;
+        ctx.font = `bold 24px ${this.fonts.primary}`;
+        ctx.fillText(achievement.name, centerX, 130);
+
+        // Description avec meilleur style
+        ctx.fillStyle = this.colors.text.secondary;
+        ctx.font = `16px ${this.fonts.primary}`;
+        this.wrapText(ctx, achievement.description || 'Congratulations on this achievement!', centerX, 160, 500, 22);
+
+        // Avatar amélioré
+        await this.drawEnhancedAvatar(ctx, user, centerX - 40, 200, 80);
+
+        // XP reward
+        if (achievement.xp) {
+            ctx.fillStyle = this.colors.accent;
+            ctx.font = `bold 18px ${this.fonts.primary}`;
+            ctx.fillText(`+${achievement.xp} XP Earned!`, centerX, 310);
         }
 
-        // Texte principal
-        ctx.fillStyle = frontColor;
-        ctx.fillText(text, x, y);
+        // Level up indicator amélioré
+        if (leveledUp) {
+            ctx.shadowColor = this.colors.warning;
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = this.colors.warning;
+            ctx.font = `bold 20px ${this.fonts.primary}`;
+            ctx.fillText(`🎊 Level Up! Now Level ${newLevel}!`, centerX, 340);
+            ctx.shadowBlur = 0;
+        }
+
+        ctx.textAlign = 'left';
     }
 
-    drawParticleEffect(ctx, width, height, color) {
-        const particles = 30;
-        
-        for (let i = 0; i < particles; i++) {
-            const x = Math.random() * width;
-            const y = Math.random() * height;
-            const size = Math.random() * 3 + 1;
-            const opacity = Math.random() * 0.5 + 0.1;
+    drawEnhancedLeaderboardHeader(ctx, category, width) {
+        const headerHeight = 100;
 
-            ctx.fillStyle = color + Math.floor(opacity * 255).toString(16).padStart(2, '0');
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
+        // Header background avec gradient
+        const headerGradient = ctx.createLinearGradient(0, 0, 0, headerHeight);
+        headerGradient.addColorStop(0, this.colors.primary + '40');
+        headerGradient.addColorStop(0.5, this.colors.secondary + '30');
+        headerGradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = headerGradient;
+        ctx.fillRect(0, 0, width, headerHeight);
+
+        // Title avec glow
+        ctx.shadowColor = this.colors.primary;
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = this.colors.text.primary;
+        ctx.font = `bold 32px ${this.fonts.primary}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`🏆 Leaderboard - ${this.getCategoryDisplayName(category)}`, width/2, 50);
+        ctx.shadowBlur = 0;
+
+        // Subtitle
+        ctx.fillStyle = this.colors.text.secondary;
+        ctx.font = `16px ${this.fonts.primary}`;
+        ctx.fillText('Top performers in the community', width/2, 75);
+
+        ctx.textAlign = 'left';
+    }
+
+    async drawEnhancedUserList(ctx, leaderboardData, limit, client, x, y) {
+        const itemHeight = 50;
+        const itemGap = 8;
+
+        for (let i = 0; i < Math.min(leaderboardData.length, limit); i++) {
+            const userData = leaderboardData[i];
+            const itemY = y + (i * (itemHeight + itemGap));
+            const position = i + 1;
+
+            // Background avec gradient basé sur la position
+            let bgAlpha = position <= 3 ? 0.2 : 0.1;
+            let borderColor = position <= 3 ? this.colors.warning : this.colors.text.muted;
+            
+            const itemGradient = ctx.createLinearGradient(x, itemY, x, itemY + itemHeight);
+            itemGradient.addColorStop(0, `rgba(255, 255, 255, ${bgAlpha})`);
+            itemGradient.addColorStop(1, `rgba(255, 255, 255, ${bgAlpha * 0.5})`);
+            ctx.fillStyle = itemGradient;
+            this.roundRect(ctx, x, itemY, 720, itemHeight, 12);
             ctx.fill();
+
+            // Border pour les top 3
+            if (position <= 3) {
+                ctx.strokeStyle = borderColor + '60';
+                ctx.lineWidth = 2;
+                this.roundRect(ctx, x, itemY, 720, itemHeight, 12);
+                ctx.stroke();
+            }
+
+            // Position indicator avec style
+            ctx.fillStyle = borderColor;
+            ctx.font = `bold 20px ${this.fonts.primary}`;
+            ctx.fillText(`#${position}`, x + 25, itemY + 32);
+
+            // Medal pour top 3
+            if (position <= 3) {
+                const medals = ['🥇', '🥈', '🥉'];
+                ctx.font = `24px ${this.fonts.primary}`;
+                ctx.fillText(medals[position - 1], x + 70, itemY + 35);
+            }
+
+            // User name avec style
+            try {
+                const user = await client.users.fetch(userData.userId);
+                ctx.fillStyle = this.colors.text.primary;
+                ctx.font = `bold 18px ${this.fonts.primary}`;
+                ctx.fillText(user.displayName || user.username, x + (position <= 3 ? 110 : 90), itemY + 32);
+            } catch {
+                ctx.fillStyle = this.colors.text.muted;
+                ctx.font = `18px ${this.fonts.primary}`;
+                ctx.fillText('Unknown User', x + (position <= 3 ? 110 : 90), itemY + 32);
+            }
+
+            // Value avec highlight
+            ctx.fillStyle = this.colors.text.secondary;
+            ctx.font = `bold 18px ${this.fonts.primary}`;
+            ctx.textAlign = 'right';
+            ctx.fillText(this.formatNumber(userData.value), x + 690, itemY + 32);
         }
+
+        ctx.textAlign = 'left';
     }
 
-    drawWavePattern(ctx, width, height) {
+    drawFooter(ctx, width, height) {
+        const footerHeight = 30;
+        const footerY = height - footerHeight;
+
+        // Footer background subtil
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(0, footerY, width, footerHeight);
+
+        // Timestamp
+        ctx.fillStyle = this.colors.text.muted;
+        ctx.font = `12px ${this.fonts.primary}`;
+        ctx.textAlign = 'center';
+        const now = new Date();
+        ctx.fillText(`Generated on ${now.toLocaleDateString()} • QuestBot Advanced v3.0`, width/2, footerY + 20);
+        ctx.textAlign = 'left';
+    }
+
+    // =================== UTILITAIRES AMÉLIORÉS ===================
+
+    roundRect(ctx, x, y, width, height, radius) {
         ctx.beginPath();
-        for (let x = 0; x <= width; x += 10) {
-            const y = height / 2 + Math.sin(x * 0.02) * 50;
-            if (x === 0) {
-                ctx.moveTo(x, y);
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    }
+
+    wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+        const words = text.split(' ');
+        let line = '';
+        let currentY = y;
+
+        ctx.textAlign = 'center';
+
+        for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = ctx.measureText(testLine);
+            const testWidth = metrics.width;
+
+            if (testWidth > maxWidth && n > 0) {
+                ctx.fillText(line, x, currentY);
+                line = words[n] + ' ';
+                currentY += lineHeight;
             } else {
-                ctx.lineTo(x, y);
+                line = testLine;
             }
         }
-        ctx.strokeStyle = '#FFFFFF20';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    }
-
-    drawLightPoints(ctx, width, height, count) {
-        for (let i = 0; i < count; i++) {
-            const x = Math.random() * width;
-            const y = Math.random() * height;
-            const size = Math.random() * 2 + 1;
-
-            ctx.fillStyle = '#FFFFFF' + Math.floor(Math.random() * 128 + 127).toString(16);
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    // =================== UTILITAIRES ===================
-
-    getNextMilestone(current) {
-        const milestones = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
-        return milestones.find(m => m > current) || current + 1000;
+        ctx.fillText(line, x, currentY);
+        ctx.textAlign = 'left';
     }
 
     formatNumber(num) {
@@ -385,76 +690,30 @@ class CanvasUtils {
         return num.toString();
     }
 
-    wrapText(ctx, text, maxWidth) {
-        const words = text.split(' ');
-        const lines = [];
-        let currentLine = words[0];
-
-        for (let i = 1; i < words.length; i++) {
-            const word = words[i];
-            const width = ctx.measureText(currentLine + ' ' + word).width;
-            if (width < maxWidth) {
-                currentLine += ' ' + word;
-            } else {
-                lines.push(currentLine);
-                currentLine = word;
-            }
-        }
-        lines.push(currentLine);
-        return lines;
-    }
-
-    drawStyledText(ctx, text, x, y, font, color, maxWidth) {
-        ctx.font = font;
-        ctx.fillStyle = color;
+    formatDuration(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
         
-        if (maxWidth) {
-            const lines = this.wrapText(ctx, text, maxWidth);
-            lines.forEach((line, index) => {
-                ctx.fillText(line, x, y + (index * 30));
-            });
-        } else {
-            ctx.fillText(text, x, y);
+        if (hours > 0) {
+            return `${hours}h ${mins}m`;
         }
+        return `${mins}m`;
     }
 
-    drawRarityBadge(ctx, rarity, x, y) {
-        const width = 120;
-        const height = 40;
-
-        // Fond avec couleur de rareté
-        ctx.fillStyle = rarity.color;
-        ctx.fillRect(x, y, width, height);
-
-        // Bordure brillante
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, width, height);
-
-        // Texte
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 14px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${rarity.emoji} ${rarity.name.toUpperCase()}`, x + width / 2, y + height / 2 + 5);
-        ctx.textAlign = 'left';
-    }
-
-    drawTimestamp(ctx, x, y) {
-        const now = new Date();
-        const timeString = now.toLocaleDateString('fr-FR') + ' • ' + now.toLocaleTimeString('fr-FR');
-        
-        ctx.fillStyle = '#888888';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(timeString, x, y);
-        ctx.textAlign = 'left';
-    }
-
-    // Méthode pour nettoyer les ressources
-    cleanup() {
-        // Nettoyer les images mises en cache, etc.
-        console.log('🧹 Nettoyage des ressources Canvas effectué');
+    getCategoryDisplayName(category) {
+        const names = {
+            messages: 'Messages',
+            voice: 'Voice Time',
+            level: 'Level',
+            experience: 'Experience',
+            reactions_given: 'Reactions Given',
+            reactions_received: 'Reactions Received',
+            achievements: 'Achievements',
+            camera: 'Camera Time',
+            stream: 'Stream Time'
+        };
+        return names[category] || category;
     }
 }
 
-module.exports = new CanvasUtils();
+module.exports = ImprovedCanvasUtils;
